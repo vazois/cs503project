@@ -2,7 +2,7 @@
 
 CC = g++
 NVCC = nvcc
-EXEC = pnnet_exec
+EXEC = snn
 
 #ADDITIONAL FOLDERS#
 COMMON = common/

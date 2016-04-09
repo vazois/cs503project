@@ -5,23 +5,29 @@
 
 #include<iostream>
 
+void example_layer_initialization(){
+	stdaf::Sigmoid s;//sigmoid activation function
+	stdaf::FSigmoid fs;// fast approximate sigmoid function
+
+	Layer<float,stdaf::Sigmoid> ls(2,3,s);//template float values, sigmoid function
+	// arguments 2 input neuros , 3 output neurons, sigmoid function definition
+
+
+	Layer<double,stdaf::FSigmoid> lfs(4,2,fs);//template double values, fast  sigmoid function
+		// arguments 4 input neuros , 2 output neurons, fast sigmoid function definition
+
+
+	std::cout<< "sigmoid activation function test: "<<ls(1.2) << std::endl;
+	std::cout<< "fast sigmoid activation function test: "<<lfs(1.2) << std::endl;
+}
+
 int main(){
-	net_arch arch;
+	example_layer_initialization();
 
-	arch.push_back(2);
-	arch.push_back(4);
-	arch.push_back(3);
-	arch.push_back(1);
+	std::vector<Layer<float,stdaf::Sigmoid>> s;
 
-	SNeuralNet<float,float,float> nnet(arch);
-
-	nnet.set_batch_size(200);
-	nnet.set_error_threshold(0.0000001);
-	nnet.set_max_iterations(500);
-
-
-	nnet.print_configuration();
-
+	s.push_back(Layer<float,stdaf::Sigmoid>(2,3,stdaf::Sigmoid()));
+	SNeuralNet<float,float,float,stdaf::Sigmoid> nn;
 
 	vz::pause();
 }

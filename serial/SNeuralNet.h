@@ -1,16 +1,20 @@
-#ifndef SNEURAL_NET
-#define SNEURAL_NET
+#ifndef SNEURAL_NET_H
+#define SNEURAL_NET_H
 
 #include "../common/Utils.h"
-
-typedef std::vector<int> net_arch;
+#include "NetConfig.h"
 
 /*
- * -
  *
- * */
+ *
+ */
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T>
+template<
+	typename INPUT_T, /* INPUT LAYER DATA TYPE */
+	typename HIDDEN_T, /* HIDDEN LAYER DATA TYPE */
+	typename OUTPUT_T, /* OUTPUT LAYER DATA TYPE */
+	typename ACT_F
+>
 class SNeuralNet{
 public:
 	SNeuralNet();
@@ -18,50 +22,53 @@ public:
 	~SNeuralNet();
 
 	/*Initialize methods*/
-	void load_train_examples(std::string filename);// load training examples from file
-	void init_train_examples(INPUT_T*,OUTPUT_T*);// provide input for training examples
+	void loadExamplesFromFile(std::string filename);// load training examples from file
+	void loadExamples(INPUT_T*,OUTPUT_T*);// provide input for training examples
+	void addLayer(Layer<HIDDEN_T,ACT_F> layer);
 
-	void set_batch_size(int b){ this->b = b; };//default value 10
-	void set_error_threshold(double threshold){ this->threshold = threshold; };// default value 0.0001
-	void set_max_iterations(int max_iterations){ this->max_iterations = max_iterations; };
+	/*Training Configuration*/
+	void setBatchSize(int b){ this->b = b; };//default value 10
+	void setTrainErrorThreshold(double threshold){ this->threshold = threshold; };// default value 0.0001
+	void setMaxIterations(int max_iterations){ this->max_iterations = max_iterations; };
 
 	/*training methods*/
-	void train();// Iterations should be > 0, if == 0 then
+	void train();//
 
 	/*Helper Methods*/
-	void print_configuration();
+	void printNetConfig();
 
 private:
+	/*Network Architecture*/
 	std::vector<int> arch;
+	std::vector<Layer<HIDDEN_T,ACT_F>> network;
+
+	/*Training Examples*/
 	INPUT_T* training_examples_input;//TODO: flat memory space or 2D arrays?
 	OUTPUT_T* training_examples_output;//TODO: flat memory space or 2D arrays?
-	HIDDEN_T* nn_weights;
 
+	/*Training Parameters*/
 	int b = 10;
-	double threshold = 0.0001;
+	double threshold = 0.01;
 	int max_iterations = 0;
-
-	int input_layer = 0;
-	int output_layer = 0;
 };
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T>::SNeuralNet(){
+template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
+SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::SNeuralNet(){
 
 }
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T>::SNeuralNet(net_arch arch){
+template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
+SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T,ACT_F>::SNeuralNet(net_arch arch){
 	this->arch = arch;
 }
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T>::~SNeuralNet(){
+template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
+SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::~SNeuralNet(){
 
 }
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T>
-void SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T>::print_configuration(){
+template<class INPUT_T,class HIDDEN_T, class OUTPUT_T, typename ACT_F>
+void SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::printNetConfig(){
 	std::cout<< "b: " << this->b << std::endl;
 	std::cout<< "t: " << this->threshold << std::endl;
 	std::cout<< "iter: " << this->max_iterations << std::endl;
