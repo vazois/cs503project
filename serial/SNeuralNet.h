@@ -10,10 +10,10 @@
  */
 
 template<
-	typename INPUT_T, /* INPUT LAYER DATA TYPE */
-	typename HIDDEN_T, /* HIDDEN LAYER DATA TYPE */
-	typename OUTPUT_T, /* OUTPUT LAYER DATA TYPE */
-	typename ACT_F
+	typename DATA_T, /* INPUT LAYER DATA TYPE */
+	//typename HIDDEN_T, /* HIDDEN LAYER DATA TYPE */
+	//typename OUTPUT_T, /* OUTPUT LAYER DATA TYPE */
+	typename ACT_F /* ACTIVATION FUNCTION */
 >
 class SNeuralNet{
 public:
@@ -23,8 +23,8 @@ public:
 
 	/*Initialize methods*/
 	void loadExamplesFromFile(std::string filename);// load training examples from file
-	void loadExamples(INPUT_T*,OUTPUT_T*);// provide input for training examples
-	void addLayer(Layer<HIDDEN_T,ACT_F> layer);
+	void loadExamples(DATA_T*,DATA_T*);// provide input for training examples
+	void addLayer(Layer<DATA_T,ACT_F> layer);
 
 	/*Training Configuration*/
 	void setBatchSize(int b){ this->b = b; };//default value 10
@@ -40,11 +40,11 @@ public:
 private:
 	/*Network Architecture*/
 	std::vector<int> arch;
-	std::vector<Layer<HIDDEN_T,ACT_F>> network;
+	std::vector<Layer<DATA_T,ACT_F>*> network;
 
 	/*Training Examples*/
-	INPUT_T* training_examples_input;//TODO: flat memory space or 2D arrays?
-	OUTPUT_T* training_examples_output;//TODO: flat memory space or 2D arrays?
+	DATA_T* training_examples_input;//TODO: flat memory space or 2D arrays?
+	DATA_T* training_examples_output;//TODO: flat memory space or 2D arrays?
 
 	/*Training Parameters*/
 	int b = 10;
@@ -52,23 +52,23 @@ private:
 	int max_iterations = 0;
 };
 
-template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::SNeuralNet(){
+template<typename DATA_T, typename ACT_F>
+SNeuralNet<DATA_T,ACT_F>::SNeuralNet(){
 
 }
 
-template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T,ACT_F>::SNeuralNet(net_arch arch){
+template<typename DATA_T, typename ACT_F>
+SNeuralNet<DATA_T,ACT_F>::SNeuralNet(net_arch arch){
 	this->arch = arch;
 }
 
-template<typename INPUT_T, typename HIDDEN_T, typename OUTPUT_T, typename ACT_F>
-SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::~SNeuralNet(){
+template<typename DATA_T, typename ACT_F>
+SNeuralNet<DATA_T,ACT_F>::~SNeuralNet(){
 
 }
 
-template<class INPUT_T,class HIDDEN_T, class OUTPUT_T, typename ACT_F>
-void SNeuralNet<INPUT_T, HIDDEN_T, OUTPUT_T, ACT_F>::printNetConfig(){
+template<typename DATA_T, typename ACT_F>
+void SNeuralNet<DATA_T,ACT_F>::printNetConfig(){
 	std::cout<< "b: " << this->b << std::endl;
 	std::cout<< "t: " << this->threshold << std::endl;
 	std::cout<< "iter: " << this->max_iterations << std::endl;

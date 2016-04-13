@@ -32,7 +32,9 @@ struct Layer{
 		this->F = F;
 
 		this->W_j = new LAYER_T[this->input_nn * this->output_nn];
+		this->D_j = new LAYER_T[this->input_nn * this->output_nn];
 		this->alpha_jj = new LAYER_T[this->output_nn];
+		this->delta_jj = new LAYER_T[this->output_nn];
 	}
 
 	/*

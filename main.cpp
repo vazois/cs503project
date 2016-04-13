@@ -10,24 +10,35 @@ void example_layer_initialization(){
 	stdaf::FSigmoid fs;// fast approximate sigmoid function
 
 	Layer<float,stdaf::Sigmoid> ls(2,3,s);//template float values, sigmoid function
-	// arguments 2 input neuros , 3 output neurons, sigmoid function definition
+	// arguments 2 input neurons , 3 output neurons, sigmoid function definition
 
 
 	Layer<double,stdaf::FSigmoid> lfs(4,2,fs);//template double values, fast  sigmoid function
-		// arguments 4 input neuros , 2 output neurons, fast sigmoid function definition
+		// arguments 4 input neurons , 2 output neurons, fast sigmoid function definition
 
 
 	std::cout<< "sigmoid activation function test: "<<ls(1.2) << std::endl;
 	std::cout<< "fast sigmoid activation function test: "<<lfs(1.2) << std::endl;
+
+	/*Example neural network construction*/
+	std::vector<Layer<float,stdaf::Sigmoid>*> nn;
+
+	nn.push_back(new Layer<float,stdaf::Sigmoid>(2,3,stdaf::Sigmoid()));/*2 inputs 3 nodes in first hidden layer*/
+	nn.push_back(new Layer<float,stdaf::Sigmoid>(2,3,stdaf::Sigmoid()));/*3 nodes prev hidden layer, 4 nodes next hidden layer */
+	nn.push_back(new Layer<float,stdaf::Sigmoid>(4,1,stdaf::Sigmoid()));/*4 nodes prev hidden layer, 1 output node*/
+
+	/*Testing activation function*/
+	std::cout<< "First layer: " << nn[0]->F(1.2) <<std::endl;
+	std::cout<< "Second layer: " << nn[1]->F(3.1) << std::endl;
+	std::cout<< "Output layer: " << nn[2]->F(0.5) << std::endl;
 }
 
 int main(){
 	example_layer_initialization();
-
 	std::vector<Layer<float,stdaf::Sigmoid>> s;
-
 	s.push_back(Layer<float,stdaf::Sigmoid>(2,3,stdaf::Sigmoid()));
-	SNeuralNet<float,float,float,stdaf::Sigmoid> nn;
+
+	SNeuralNet<float,stdaf::Sigmoid> nn;
 
 	vz::pause();
 }
