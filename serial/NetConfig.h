@@ -41,8 +41,10 @@ struct Layer{
 	 * Struct destructor. Free memory.
 	 */
 	~Layer(){
-		delete this->W_j;
-		delete this->alpha_jj;
+		if(this->W_j != NULL) delete this->W_j;
+		if(this->apha_jj != NULL) delete this->alpha_jj;
+		if(this->delta_jj != NULL) delete this->delta_jj;
+		if(this->D_j != NULL) delete this->D_j;
 	}
 
 	/*
@@ -84,7 +86,7 @@ namespace stdaf{
 	struct Sigmoid{
 		template<typename T>
 		inline T D(T x){
-			return x*(1-x);
+			return F(x)*F(1-x);
 		}
 
 		template<typename T>
@@ -94,7 +96,7 @@ namespace stdaf{
 
 		template<typename T>
 		inline T operator()(T x){
-			return 1/(1 + exp(-x));
+			return F(x);
 		}
 	};
 
@@ -106,12 +108,12 @@ namespace stdaf{
 
 		template<typename T>
 		inline T F(T x){
-				return 1/(1 + exp(-x));
+				return x/(1.0 + fabs(x));
 		}
 
 		template<typename T>
 		inline T operator()(T x){
-			return x/(1.0 + fabs(x));
+			return F(x);
 		}
 	};
 }

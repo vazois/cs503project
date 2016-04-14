@@ -33,8 +33,6 @@
 
 #define FOLDER "data/"
 
-typedef std::pair<uint64_t, uint64_t> arr2D;
-
 namespace vz{
 	static void pause(){ std::cout << "\nPress enter to continue ..." << std::endl; while (getchar() != '\n'); }
 	static void error(std::string error){
@@ -57,25 +55,25 @@ public:
 	T uni(T max);
 	T uni(T min, T max);
 	T rnum(unsigned int low, unsigned int high);
-	void set_seed(unsigned int);
-	void rand_data(unsigned int d, unsigned int n, unsigned int max);
-	void rand_data(std::string file, unsigned int d, unsigned int n, unsigned int max);
-	void rand_data(std::string file, unsigned int d, unsigned int n, unsigned int min,unsigned int max);
+	void setSeed(unsigned int);
+	void randDataToFile(unsigned int d, unsigned int n, unsigned int max);
+	void randDataToFile(std::string file, unsigned int d, unsigned int n, unsigned int max);
+	void randDataToFile(std::string file, unsigned int d, unsigned int n, unsigned int min,unsigned int max);
 	void shuffle_array(T *&arr, unsigned int n);
 
 	//String Tokenize//
 	std::vector<std::string> split(std::string str, std::string delimiter);
 
 	//File Manipulation Files//
-	arr2D find_dim(std::string);//Default delimiter ","
-	arr2D find_dim(std::string, std::string);//choose delimeter to find dimensions of data
+	arr2D dataDim(std::string);//Default delimiter ","
+	arr2D dataDim(std::string, std::string);//choose delimeter to find dimensions of data
 	uint64_t fsize(std::string);
-	inline bool file_exists(const std::string& name);
+	inline bool fexists(const std::string& name);
 
-	arr2D fast_readcsv(T *&arr, std::string file, bool pinned);
-	void fast_readcsv(T *&arr, std::string file, arr2D);
-	void fast_readcsv(T *&arr, std::string file, unsigned int d, unsigned int n);
-	void mt_fast_readcsv(T *&arr, std::string file, unsigned int d, unsigned int n);
+	arr2D fastRead(T *&arr, std::string file, bool pinned);
+	void fastRead(T *&arr, std::string file, arr2D);
+	void fastRead(T *&arr, std::string file, unsigned int d, unsigned int n);
+	void mt_fastRead(T *&arr, std::string file, unsigned int d, unsigned int n);
 
 	void print_array(const T *arr, unsigned int limit);
 
@@ -120,25 +118,25 @@ T Utils<T>::rnum(unsigned int low, unsigned high){
 }
 
 template<class T>
-void Utils<T>::set_seed(unsigned int seed){
+void Utils<T>::setSeed(unsigned int seed){
 	this->seed = seed;
 	this->generator.seed(this->seed);
 }
 
 template<class T>
-void Utils<T>::rand_data(unsigned int d, unsigned int n, unsigned int max){
+void Utils<T>::randDataToFile(unsigned int d, unsigned int n, unsigned int max){
 	std::string file = std::to_string(d) + "_" + std::to_string(n) + ".dat";
-	this->rand_data(file, d, n, 0, max);
+	this->randDataToFile(file, d, n, 0, max);
 }
 
 template<class T>
-void Utils<T>::rand_data(std::string file, unsigned int d, unsigned int n, unsigned int max){
-	this->rand_data(file, d, n, 0, max);
+void Utils<T>::randDataToFile(std::string file, unsigned int d, unsigned int n, unsigned int max){
+	this->randDataToFile(file, d, n, 0, max);
 }
 
 template<class T>
-void Utils<T>::rand_data(std::string file, unsigned int d, unsigned int n, unsigned int _min, unsigned int _max){
-	std::ofstream fp(FOLDER+file);
+void Utils<T>::randDataToFile(std::string file, unsigned int d, unsigned int n, unsigned int _min, unsigned int _max){
+	std::ofstream fp(file);
 
 	unsigned int lines = MIN(4096, n);
 	unsigned int total = 0;
@@ -169,13 +167,13 @@ void Utils<T>::shuffle_array(T *&arr,unsigned int n){
 }
 
 template<class T>
-arr2D Utils<T>::find_dim(std::string file, std::string delim){
+arr2D Utils<T>::dataDim(std::string file, std::string delim){
 	this->delim = delim;
-	return this->find_dim(file);
+	return this->dataDim(file);
 }
 
 template<class T>
-arr2D Utils<T>::find_dim(std::string file){
+arr2D Utils<T>::dataDim(std::string file){
 	arr2D dim(0, 0);
 	FILE *fp = fopen(file.c_str(), "r");
 	uint64_t bytes = 1024;
@@ -199,7 +197,7 @@ arr2D Utils<T>::find_dim(std::string file){
 }
 
 template<class T>
-inline bool Utils<T>::file_exists (const std::string& name) {
+inline bool Utils<T>::fexists (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
         return true;
@@ -229,24 +227,24 @@ uint64_t Utils<T>::fsize(std::string file){
 }
 
 template<class T>
-arr2D Utils<T>::fast_readcsv(T *&arr, std::string file, bool pinned){
-	arr2D dim = this->find_dim(file);
-	if(pinned) allocHostMem<T>(&arr,sizeof(T)*dim.first*dim.second,"Error Allocating Host Pinned Memory (fast_readcsv)");
+arr2D Utils<T>::fastRead(T *&arr, std::string file, bool pinned){
+	arr2D dim = this->dataDim(file);
+	if(pinned) allocHostMem<T>(&arr,sizeof(T)*dim.first*dim.second,"Error Allocating Host Pinned Memory (fastRead)");
 	else arr = new T[dim.first*dim.second];
-	fast_readcsv(arr,file,dim);
+	fastRead(arr,file,dim);
 	return dim;
 }
 
 template<class T>
-void Utils<T>::fast_readcsv(T *&arr, std::string file, arr2D dim){
-	this->fast_readcsv(arr, file, dim.first, dim.second);
+void Utils<T>::fastRead(T *&arr, std::string file, arr2D dim){
+	this->fastRead(arr, file, dim.first, dim.second);
 }
 
 /**/
 template<class T>
-void Utils<T>::fast_readcsv(T *&arr, std::string file, unsigned int d, unsigned int n){
-	if(arr == NULL) vz::error("fast_readcsv: Array NULL pointer exception");
-	if(!this->file_exists(file)) vz::error("fast_readcsv: File Not Found Exception");
+void Utils<T>::fastRead(T *&arr, std::string file, unsigned int d, unsigned int n){
+	if(arr == NULL) vz::error("fastRead: Array NULL pointer exception");
+	if(!this->fexists(file)) vz::error("fastRead: File Not Found Exception");
 	uint64_t totalbytes = this->fsize(file);
 	char *buffer = new char[totalbytes];
 	FILE *fp = fopen(file.c_str(), "r");
@@ -261,33 +259,6 @@ void Utils<T>::fast_readcsv(T *&arr, std::string file, unsigned int d, unsigned 
 	char dummy;
 	while(i < d*n){ iss>>arr[i]; iss >> dummy; i++; }
 }
-
-
-/*template<class T>
-arr2D Utils<T>::parse_csv(T *&arr, std::string file, bool pinned){
-	arr2D dim = this->find_dim(file);
-	uint64_t totalbytes = this->fsize(file);
-
-	char *buffer = new char[totalbytes];
-	FILE *fp = fopen(file.c_str(), "r");
-	totalbytes = fread(buffer, 1, totalbytes, fp);
-	buffer[totalbytes] = '\0';
-	fclose(fp);
-
-	std::stringstream iss; iss << buffer;
-	delete buffer;
-
-	int i = 0;
-	char dummy;
-	while(i < dim.first*dim.second){
-		iss>>arr[i];
-		//std::cout<<arr[i] << " " << " ";
-		iss >> dummy;
-		i++;
-	}
-
-	return dim;
-}*/
 
 template<class T>
 void Utils<T>::print_array(const T *arr,unsigned int limit){

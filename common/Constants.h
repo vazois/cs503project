@@ -1,9 +1,12 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
+
 #include<ratio>
 #include<climits>
 #include<chrono>
 #include<ctime>
+
+typedef std::pair<uint64_t, uint64_t> arr2D;
 
 typedef std::chrono::duration<double, std::ratio<1, 1000000000>> nanos;
 typedef std::chrono::duration<double, std::ratio<1,1000>> millis;

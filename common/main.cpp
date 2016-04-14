@@ -3,6 +3,7 @@
 #include "Time.h"
 //#include "CudaHelper.h"
 #include "Utils.h"
+#include "IOTools.h"
 
 /*Functor Example*/
 template<typename T>
@@ -64,12 +65,11 @@ struct Layer{
 
 };
 
-
-int main(int argc, char **argv){
+void test_template_function(){
 	Default d;
 	Sigmoid s;
 	FSigmoid fs;
-	
+
 	std::cout<<d('x')<< std::endl;
 	std::cout<<s(1.2)<< std::endl;
 	std::cout<<fs(1.2)<< std::endl;
@@ -83,12 +83,47 @@ int main(int argc, char **argv){
 	std::cout<<ld.compute()<< std::endl;
 	std::cout<<ls.compute()<< std::endl;
 	std::cout<<lfs.compute()<< std::endl;
+}
 
-	//d=s;
 
-	//std::cout<<d(1.2)<<std::endl;
+void testReadWrite(ArgParser ap){
+	int c = ap.getInt(CARG);
+	int d = ap.getInt(DARG);
 
-	vz::pause();
+	if(ap.exists(MDARG)){
+		static const char s[] = "Test 2";
+		IOTools<float> iot;
+		if(!ap.getString(MDARG).compare("w")){
+			if(!ap.exists(DARG) ){
+				vz::error("provide dimensionality");
+			}
+
+			if(!ap.exists(CARG)){
+				vz::error("provide cardinality");
+			}
+			iot.randDataToFile("testData.csv",d,c,1024);
+
+		}else if(!ap.getString(MDARG).compare("r")){
+
+		}
+	}
+}
+
+
+
+
+int main(int argc, char **argv){
+
+	ArgParser ap;
+	ap.parseArgs(argc,argv);
+
+	if(ap.exists(HELP) || ap.count() == 0){
+		ap.menu();
+		return 0;
+	}
+
+	testReadWrite(ap);
+	//vz::pause();
 
 	return 0;
 }
