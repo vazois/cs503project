@@ -11,17 +11,16 @@
 
 template<
 	typename DATA_T, /* INPUT LAYER DATA TYPE */
-	//typename HIDDEN_T, /* HIDDEN LAYER DATA TYPE */
-	//typename OUTPUT_T, /* OUTPUT LAYER DATA TYPE */
 	typename ACT_F /* ACTIVATION FUNCTION */
 >
 class SNeuralNet{
 public:
 	SNeuralNet();
-	SNeuralNet(net_arch arch);
+	SNeuralNet(net_arch arch,ACT_F F);
 	~SNeuralNet();
 
 	/*Initialize methods*/
+	void init();
 	void loadExamplesFromFile(std::string filename);// load training examples from file
 	void loadExamples(DATA_T*,DATA_T*);// provide input for training examples
 	void addLayer(Layer<DATA_T,ACT_F> layer);
@@ -39,8 +38,9 @@ public:
 
 private:
 	/*Network Architecture*/
-	std::vector<int> arch;
+	net_arch arch;
 	std::vector<Layer<DATA_T,ACT_F>*> network;
+	ACT_F F;
 
 	/*Training Examples*/
 	DATA_T* training_examples_input;//TODO: flat memory space or 2D arrays?
@@ -58,13 +58,21 @@ SNeuralNet<DATA_T,ACT_F>::SNeuralNet(){
 }
 
 template<typename DATA_T, typename ACT_F>
-SNeuralNet<DATA_T,ACT_F>::SNeuralNet(net_arch arch){
+SNeuralNet<DATA_T,ACT_F>::SNeuralNet(net_arch arch, ACT_F F){
 	this->arch = arch;
+	this->F = F;
 }
 
 template<typename DATA_T, typename ACT_F>
 SNeuralNet<DATA_T,ACT_F>::~SNeuralNet(){
 
+}
+
+template<typename DATA_T, typename ACT_F>
+void SNeuralNet<DATA_T,ACT_F>::init(){
+	for(int i = 1;i<this->arch.size();i++){
+		network.push_back(new Layer<DATA_T,ACT_F>(this->arch[i-1],this->arch[i],this->F));
+	}
 }
 
 template<typename DATA_T, typename ACT_F>

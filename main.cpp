@@ -35,10 +35,15 @@ void example_layer_initialization(){
 
 int main(){
 	example_layer_initialization();
-	std::vector<Layer<float,stdaf::Sigmoid>> s;
-	s.push_back(Layer<float,stdaf::Sigmoid>(2,3,stdaf::Sigmoid()));
 
-	SNeuralNet<float,stdaf::Sigmoid> nn;
+	net_arch arch;
+	arch.push_back(2);
+	arch.push_back(4);
+	arch.push_back(2);
+	arch.push_back(3);
+
+
+	SNeuralNet<float,stdaf::Sigmoid> nn(arch,stdaf::Sigmoid());
 
 	vz::pause();
 }
