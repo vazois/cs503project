@@ -18,20 +18,26 @@ enum StructType{
 template<typename DATA_T>
 class IOTools{
 public:
-	IOTools():IOTools(0,0,COMMA){};
-	IOTools(arr2D dim):IOTools(dim.first,dim.second,COMMA){};
+	IOTools():IOTools(0,0,COMMA, false){};
+	IOTools(arr2D dim):IOTools(dim.first,dim.second,COMMA,false){};
 
-	IOTools(uint64_t rows, uint64_t cols, Delimiter dm){
+	/*
+	 * 1. lines of data
+	 * 2. data per line
+	 * 3. delimiter
+	 * 4. pinned memory or not
+	 */
+	IOTools(uint64_t rows, uint64_t cols, Delimiter dm, bool pinned){
 		this->dim.first = rows;
 		this->dim.second = cols;
+		this->dm = dm;
+		this->pinned = pinned;
 	};
 
 	~IOTools(){};
 
 	/*Read Data Methods*/
-	arr2D fastRead(DATA_T *&arr, std::string file, bool pinned);
-	void fastRead(DATA_T *&arr, std::string file, arr2D);
-	void fastRead(DATA_T *&arr, std::string file, unsigned int d, unsigned int n);
+	void fastReadFile(DATA_T *&arr, std::string file);
 
 	/*Write Data Methods*/
 	void randDataToFile(unsigned int d, unsigned int n, unsigned int max);
@@ -52,19 +58,64 @@ private:
 	Utils<DATA_T> ut;
 	arr2D dim;
 
-	DATA_T *_1DArray;
-	DATA_T **_2DArray;
-
 	uint64_t readBufferSize = 16 * 1024;/*in lines*/
 	uint64_t writeBufferSize = 128 * 1024; /* in bytes*/
+
 	StructType st;
 	Delimiter dm;
+	bool pinned;
 };
 
 /*
  * Read Data Methods
  */
 
+template<typename DATA_T>
+void IOTools<DATA_T>::fastReadFile(DATA_T *& data, std::string file){
+	if(!this->fexists(file)) vz::error("fastRead: File Not Found Exception");
+	if(dim.first == 0 || dim.second == 0)  this->dim = dataDim(file);
+	if(pinned) allocHostMem<DATA_T>(&data,sizeof(DATA_T)* cells(dim),"Error Allocating Pinned Memory in fastReaFile");
+	else data = new DATA_T[cells(dim)];
+
+	uint64_t totalbytes = this->fsize(file);
+	char *buffer = new char[totalbytes];
+	FILE *fp = fopen(file.c_str(), "r");
+	totalbytes = fread(buffer, 1, totalbytes, fp);
+	buffer[totalbytes] = '\0';
+	fclose(fp);
+
+	Time<millis> t;
+	t.start();
+	uint64_t i = 0;
+	uint64_t j = -1;
+	char number[64];
+	while(i < cells(dim)){
+		short k = 0;
+		while(j < totalbytes && buffer[j]!= this->dm && buffer[j]!='\n') {
+			number[k++] = buffer[j++];
+		}
+		number[k]='\0';
+		//std::cout<<"NUMBER: "<<number<< "\n";
+		data[i++] = (DATA_T)strtod(number,NULL);
+		j++;
+	}
+	t.lap("Read File Elapsed time");
+
+
+	/*std::stringstream iss; iss << buffer;
+	delete buffer;
+
+	i = 0;
+	char dummy;
+	//Time<millis> t;
+	t.start();
+	while(i < cells(dim)){
+		iss>>data[i]; iss >> dummy; i++;
+		//std::cout<< data[i-1] << " ";
+		//if(i % dim.first == 0){ std::cout<<std::endl; }
+	}
+	t.lap("Read File Elapsed time");*/
+}
 
 
 /*
@@ -105,6 +156,7 @@ void IOTools<DATA_T>::randDataToFile(std::string file, unsigned int d, unsigned 
 		ss.clear();
 		processed += total;
 	}
+	//fp<<"\n";
 	fp.close();
 }
 
