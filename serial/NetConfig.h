@@ -1,8 +1,6 @@
 #include <cmath>
 typedef std::vector<int> net_arch;
 
-typedef int (*Fun)(int,int);
-
 /*
  * Neural Network Layer Abstraction
  */
@@ -42,7 +40,7 @@ struct Layer{
 	 */
 	~Layer(){
 		if(this->W_j != NULL) delete this->W_j;
-		if(this->apha_jj != NULL) delete this->alpha_jj;
+		if(this->alpha_jj != NULL) delete this->alpha_jj;
 		if(this->delta_jj != NULL) delete this->delta_jj;
 		if(this->D_j != NULL) delete this->D_j;
 	}
