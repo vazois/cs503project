@@ -2,6 +2,7 @@
 #include"common/Utils.h"
 
 #include"serial/SNeuralNet.h"
+#include"parallel_gpu/GNNConfig.h"
 
 #include<iostream>
 
@@ -35,15 +36,6 @@ void example_layer_initialization(){
 
 int main(){
 	example_layer_initialization();
-
-	net_arch arch;
-	arch.push_back(2);
-	arch.push_back(4);
-	arch.push_back(2);
-	arch.push_back(3);
-
-
-	SNeuralNet<float,stdaf::Sigmoid> nn(arch,stdaf::Sigmoid());
 
 	vz::pause();
 }
