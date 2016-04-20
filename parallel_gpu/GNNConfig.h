@@ -38,8 +38,8 @@ namespace gnn{
 		}
 	};
 
-	struct ArcTan{
-		char TAG[10] = "ArcTan";
+	struct Arctan{
+		char TAG[10] = "Arctan";
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
 			return powf(1/acoshf(x),2.0);
@@ -58,7 +58,6 @@ namespace gnn{
 
 	template<typename DATA_T>
 	struct BlockPart{
-		DATA_ *D_j
 
 	};
 
@@ -76,7 +75,6 @@ namespace gnn{
 
 	template<typename DATA_T, typename ACT_F>
 	void bench_act(ACT_F F);
-
 
 }
 

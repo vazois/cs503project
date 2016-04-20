@@ -46,4 +46,5 @@ namespace gnn{
 	 */
 	template void bench_act<float,gnn::Sigmoid>(gnn::Sigmoid F);
 	template void bench_act<float,gnn::FSigmoid>(gnn::FSigmoid F);
+	template void bench_act<float,gnn::Arctan>(gnn::Arctan F);
 }

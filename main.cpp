@@ -37,8 +37,10 @@ void example_layer_initialization(){
 void example_gpu_bench_act(){
 	gnn::Sigmoid gs;
 	gnn::FSigmoid gfs;
+	gnn::Arctan gatan;
 	gnn::bench_act<float,gnn::Sigmoid>(gs);
 	gnn::bench_act<float,gnn::FSigmoid>(gfs);
+	gnn::bench_act<float,gnn::Arctan>(gatan);
 }
 
 int main(){
