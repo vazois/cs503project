@@ -101,7 +101,7 @@ namespace stdaf{
 	struct FSigmoid{
 		template<typename T>
 		inline T D(T x){
-				return x*(1-x);
+				return 1.0/(1.0 + fabs(x));
 		}
 
 		template<typename T>

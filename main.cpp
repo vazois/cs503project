@@ -34,8 +34,15 @@ void example_layer_initialization(){
 	std::cout<< "Output layer: " << nn[2]->F(0.5) << std::endl;
 }
 
+void example_gpu_bench_act(){
+	gnn::Sigmoid gs;
+	gnn::FSigmoid gfs;
+	gnn::bench_act<float,gnn::Sigmoid>(gs);
+	gnn::bench_act<float,gnn::FSigmoid>(gfs);
+}
+
 int main(){
 	example_layer_initialization();
+	example_gpu_bench_act();
 
-	vz::pause();
 }

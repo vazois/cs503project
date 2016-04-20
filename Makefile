@@ -4,10 +4,6 @@ CC = g++
 NVCC = nvcc
 EXEC = snn
 
-#ADDITIONAL FOLDERS#
-COMMON = common/
-SERIAL = serial/
-
 #LIBRARIES#
 LIB_FLAGS = -lcuda -lcudart
 INCLUDE_PATHS = /usr/local/cuda/include
@@ -15,7 +11,7 @@ INCUDE_LIB = /usr/local/cuda-7.5/lib64
 
 #COMPILATION FILES#
 CPP_FILES = *.cpp
-CU_FILES = $(COMMON)*.cu #*.cu
+CU_FILES = common/*.cu parallel_gpu/*.cu #*.cu
 
 NVCC_FLAGS = --ptxas-options=-v -gencode arch=compute_35,code=sm_35 -rdc=true
 

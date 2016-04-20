@@ -12,40 +12,73 @@ namespace gnn{
  * - Shared memory used to store weight matrix
  */
 
-struct Sigmoid{
-	template<typename T>
-		__device__ inline T D(T x){
+	struct Sigmoid{
+		char TAG[10] = "Sigmoid";
+		template<typename T>
+		__forceinline__ __device__ T D(T x){
 			return F(x)*F(1-x);
 		}
 
 		template<typename T>
-		__device__ inline T F(T x){
-			return 1/(1 + exp(-x));
+		__forceinline__ __device__ T F(T x){
+			return 1/(1 + expf(-x));
+		}
+	};
+
+	struct FSigmoid{
+		char TAG[10] = "FSigmoid";
+		template<typename T>
+		__forceinline__ __device__ T D(T x){
+			return 1.0/powf(1.0 + fabsf(x),2.0);
 		}
 
 		template<typename T>
-		__device__ inline T operator()(T x){
-			return F(x);
+		__forceinline__ __device__ T F(T x){
+			return x/(1.0 + fabsf(x));
 		}
-};
+	};
 
-template<typename DATA_T, typename ACT_F>
-struct GNeuralNetwork{
+	struct ArcTan{
+		char TAG[10] = "ArcTan";
+		template<typename T>
+		__forceinline__ __device__ T D(T x){
+			return powf(1/acoshf(x),2.0);
+		}
+
+		template<typename T>
+		__forceinline__ __device__ T F(T x){
+			return 	tanhf(x);
+		}
+	};
+
+	template<typename DATA_T>
+	struct TrainExample{
+
+	};
+
+	template<typename DATA_T>
+	struct BlockPart{
+		DATA_ *D_j
+
+	};
+
+	template<typename DATA_T, typename ACT_F>
+	struct Layer{
+		DATA_T *M_j;
+		DATA_T *a_j;
+
+		Layer(unsigned int input_nn, unsigned int output_nn, ACT_F F){
+			allocDevMem(&M_j,sizeof(DATA_T)*input_nn*output_nn,"error allocating layer weight matrix");
+			allocDevMem(&a_j,sizeof(DATA_T)*output_nn,"error allocating layer activation vector");
+		}
+
+	};
+
+	template<typename DATA_T, typename ACT_F>
+	void bench_act(ACT_F F);
 
 
-};
+}
 
-template<typename DATA_T, typename ACT_F>
-struct Layer{
-	DATA_T *M_j;
-	DATA_T *v_j;
-
-
-
-};
-
-
-
-};
 
 #endif
