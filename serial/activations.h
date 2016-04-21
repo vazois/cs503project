@@ -1,3 +1,6 @@
+#ifndef ACTIVATIONS_H
+#define ACTIVATIONS_H
+
 #include <cmath>
 
 /*
@@ -45,4 +48,5 @@ namespace neuralnet{
 
 }
 
+#endif // ACTIVATIONS_H
 
