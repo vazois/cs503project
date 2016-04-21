@@ -18,7 +18,7 @@ enum StructType{
 template<typename DATA_T>
 class IOTools{
 public:
-	IOTools():IOTools(0,0,COMMA, false){};
+	IOTools():IOTools(0,0,COMMA){};
 	IOTools(arr2D dim):IOTools(dim.first,dim.second,COMMA,false){};
 
 	/*
@@ -27,17 +27,16 @@ public:
 	 * 3. delimiter
 	 * 4. pinned memory or not
 	 */
-	IOTools(uint64_t rows, uint64_t cols, Delimiter dm, bool pinned){
+	IOTools(uint64_t rows, uint64_t cols, Delimiter dm){
 		this->dim.first = rows;
 		this->dim.second = cols;
 		this->dm = dm;
-		this->pinned = pinned;
 	};
 
 	~IOTools(){};
 
 	/*Read Data Methods*/
-	void fastReadFile(DATA_T *&arr, std::string file);
+	void freadFile(DATA_T *&arr, std::string file, bool pinned);
 
 	/*Write Data Methods*/
 	void randDataToFile(unsigned int d, unsigned int n, unsigned int max);
@@ -63,7 +62,6 @@ private:
 
 	StructType st;
 	Delimiter dm;
-	bool pinned;
 };
 
 /*
@@ -71,7 +69,7 @@ private:
  */
 
 template<typename DATA_T>
-void IOTools<DATA_T>::fastReadFile(DATA_T *& data, std::string file){
+void IOTools<DATA_T>::freadFile(DATA_T *& data, std::string file, bool pinned){
 	if(!this->fexists(file)) vz::error("fastRead: File Not Found Exception");
 	if(dim.first == 0 || dim.second == 0)  this->dim = dataDim(file);
 	if(pinned) allocHostMem<DATA_T>(&data,sizeof(DATA_T)* cells(dim),"Error Allocating Pinned Memory in fastReaFile");
@@ -87,7 +85,7 @@ void IOTools<DATA_T>::fastReadFile(DATA_T *& data, std::string file){
 	Time<millis> t;
 	t.start();
 	uint64_t i = 0;
-	uint64_t j = -1;
+	uint64_t j = 0;
 	char number[64];
 	while(i < cells(dim)){
 		short k = 0;
@@ -95,26 +93,11 @@ void IOTools<DATA_T>::fastReadFile(DATA_T *& data, std::string file){
 			number[k++] = buffer[j++];
 		}
 		number[k]='\0';
-		//std::cout<<"NUMBER: "<<number<< "\n";
 		data[i++] = (DATA_T)strtod(number,NULL);
+		//std::cout<<"NUMBER: "<<number<<","<<data[i-1]<< "\n";
 		j++;
 	}
 	t.lap("Read File Elapsed time");
-
-
-	/*std::stringstream iss; iss << buffer;
-	delete buffer;
-
-	i = 0;
-	char dummy;
-	//Time<millis> t;
-	t.start();
-	while(i < cells(dim)){
-		iss>>data[i]; iss >> dummy; i++;
-		//std::cout<< data[i-1] << " ";
-		//if(i % dim.first == 0){ std::cout<<std::endl; }
-	}
-	t.lap("Read File Elapsed time");*/
 }
 
 

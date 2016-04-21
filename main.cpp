@@ -38,13 +38,36 @@ void example_gpu_bench_act(){
 	gnn::Sigmoid gs;
 	gnn::FSigmoid gfs;
 	gnn::Arctan gatan;
-	gnn::bench_act<float,gnn::Sigmoid>(gs);
-	gnn::bench_act<float,gnn::FSigmoid>(gfs);
-	gnn::bench_act<float,gnn::Arctan>(gatan);
+
+	gnn::GNeuralNetwork<float,gnn::Sigmoid> s(gs);
+	s.bench_act();
+
+	gnn::GNeuralNetwork<float,gnn::FSigmoid> fs(gfs);
+	fs.bench_act();
+
+	gnn::GNeuralNetwork<float,gnn::Arctan> at(gatan);
+	at.bench_act();
+}
+
+void example_gpu_initializing_weights(){
+	gnn::Sigmoid gs;
+	gnn::GNeuralNetwork<float,gnn::Sigmoid> s(gs);
+	s.loadExamplesFromFile("data/test.csv");
+	std::vector<int> layers;
+
+	layers.push_back(8); //INPUT
+	layers.push_back(4); //HIDDEN 1
+	layers.push_back(6); //HIDDEN 2
+	layers.push_back(2); //HIDDEN 3
+	layers.push_back(3); //OUTPUT
+
+	s.createLayers(layers);
+	s.print_weights();
 }
 
 int main(){
-	example_layer_initialization();
-	example_gpu_bench_act();
+	example_layer_initialization(); std::cout<<"<----------------------------------->" << std::endl;
+	example_gpu_bench_act(); std::cout<<"<----------------------------------->" << std::endl;
+	example_gpu_initializing_weights();
 
 }

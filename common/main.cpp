@@ -105,7 +105,7 @@ void testReadWrite(ArgParser ap){
 
 		}else if(!ap.getString(MDARG).compare("r")){
 			float *data= NULL;
-			iot.fastReadFile(data,"testData.csv");
+			iot.freadFile(data,"testData.csv",false);
 		}
 	}
 }
