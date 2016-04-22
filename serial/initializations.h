@@ -18,18 +18,26 @@ namespace neuralnet{
 	template<typename T>
 	struct Initializer
 	{
-		unsigned seed;
+		unsigned long seed;
 		Initializer()
 		{
-			seed = chrono::system_clock::now().time_since_epoch().count();	
+			seed = std::chrono::system_clock::now().time_since_epoch().count();	
 		}
 
 		virtual inline void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
 	};
 	
-	struct UniformRandomInitializer: public Initializer{};
+	template<typename T>
+	struct UniformRandomInitializer: public Initializer<T>
+	{
+		void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
+	};
 	
-	struct GlorotRandomInitializer: public Initializer{};
+	template<typename T>
+	struct GlorotUniformInitializer: public Initializer<T>
+	{
+		void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
+	};
 
 }
 #endif //INITIALIZATIONS_H

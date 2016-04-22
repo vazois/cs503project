@@ -10,14 +10,14 @@
 namespace neuralnet{
 
 	template<typename T>
-    void UniformRandomInitializer::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
+    void UniformRandomInitializer<T>::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
 	{
 		int nRows = W.size();
 		assert(nRows > 0);
 		int nCols = W[0].size();
 
-		default_random_engine generator (seed);
-		uniform_real_distribution<T> distribution (0.0,1.0);
+		std::default_random_engine generator(this->seed);
+		std::uniform_real_distribution<T> distribution(0.0,1.0);
 		for(int i = 0; i < nRows; i++)
 		{
 			assert(W[i].size() == nCols);
@@ -28,14 +28,14 @@ namespace neuralnet{
 	}
 	
 	template<typename T>
-	void GlorotRandomInitializer::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
+	void GlorotUniformInitializer<T>::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
 	{
 		int nRows = W.size();
 		assert(nRows > 0);
 		int nCols = W[0].size();
 
-		default_random_engine generator (seed);
-		uniform_real_distribution<T> distribution (-1.0,1.0);
+		std::default_random_engine generator(this->seed);
+		std::uniform_real_distribution<T> distribution(-1.0,1.0);
 		T glorotConstant = sqrt(6)/sqrt(nRows + nCols);
 		for(int i = 0; i < nRows; i++)
 		{

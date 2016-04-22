@@ -25,18 +25,39 @@ namespace neuralnet
 	};
 
 	template<typename T>
-	struct Sigmoid: public Activation
+	struct Sigmoid: public Activation<T>
 	{
+		void D(T &x, T &y);
+		void F(T &x, T &y);
+		void operator()(T &x, T &y);
+		
+		void D(std::vector<T> &x, std::vector<T> &y);
+		void F(std::vector<T> &x, std::vector<T> &y);
+		void operator()(std::vector<T> &x, std::vector<T> &y);
 	};
 
 	template<typename T>
-	struct FSigmoid: public Activation
+	struct FSigmoid: public Activation<T>
 	{	
+		void D(T &x, T &y);
+		void F(T &x, T &y);
+		void operator()(T &x, T &y);
+		
+		void D(std::vector<T> &x, std::vector<T> &y);
+		void F(std::vector<T> &x, std::vector<T> &y);
+		void operator()(std::vector<T> &x, std::vector<T> &y);
 	};
 
 	template<typename T>
-	struct ReLU: public Activation
+	struct ReLU: public Activation<T>
 	{
+		void D(T &x, T &y);
+		void F(T &x, T &y);
+		void operator()(T &x, T &y);
+		
+		void D(std::vector<T> &x, std::vector<T> &y);
+		void F(std::vector<T> &x, std::vector<T> &y);
+		void operator()(std::vector<T> &x, std::vector<T> &y);
 	};
 
 }
