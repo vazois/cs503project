@@ -1,4 +1,4 @@
-#include "layer.h"
+#include "activations.h"
 #include <cmath>
 #include <vector>
 
