@@ -19,10 +19,7 @@ namespace neuralnet{
 	struct Initializer
 	{
 		unsigned long seed;
-		Initializer()
-		{
-			seed = std::chrono::system_clock::now().time_since_epoch().count();	
-		}
+		Initializer();
 
 		virtual inline void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
 	};

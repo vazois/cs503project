@@ -10,6 +10,12 @@
 namespace neuralnet{
 
 	template<typename T>
+    Initializer<T>::Initializer()
+	{
+		seed = std::chrono::system_clock::now().time_since_epoch().count();	
+	}
+
+	template<typename T>
     void UniformRandomInitializer<T>::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
 	{
 		int nRows = W.size();
