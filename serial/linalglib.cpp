@@ -154,14 +154,14 @@ namespace linalglib
 	template<typename T>
 	Matrix<T> add(Matrix<T> &M1, Matrix<T> &M2)
 	{
-		Matrix<T> Y(M1.size(), std::vector<T>(M1[0].size()));
+		Matrix<T> Y(M1.size(), Vector<T>(M1[0].size()));
 		add(M1, M2, Y);
 		return Y;
 	}
 	template<typename T>
 	Matrix<T> subtract(Matrix<T> &M1, Matrix<T> &M2)
 	{
-		Matrix<T> Y(M1.size(), std::vector<T>(M1[0].size()));
+		Matrix<T> Y(M1.size(), Vector<T>(M1[0].size()));
 		subtract(M1, M2, Y);
 		return Y;
 	}
@@ -205,14 +205,14 @@ namespace linalglib
 	template<typename T>
 	Matrix<T> scalarproduct(T &s, Matrix<T> &M)
 	{
-		Matrix<T> Y(M.size(), std::vector<T>(M[0].size()));
+		Matrix<T> Y(M.size(), Vector<T>(M[0].size()));
 		scalarproduct(s, M, Y);
 		return Y;
 	}
 	template<typename T>
 	Matrix<T> scalarproduct(Matrix<T> &M, T &s)
 	{
-		Matrix<T> Y(M.size(), std::vector<T>(M[0].size()));
+		Matrix<T> Y(M.size(), Vector<T>(M[0].size()));
 		scalarproduct(s, M, Y);
 		return Y;	
 	}
@@ -220,7 +220,7 @@ namespace linalglib
 	template<typename T>
 	Matrix<T> transpose(Matrix<T> &M)
 	{
-		Matrix<T> Y(M[0].size(0), std::vector<T>(M.size()));
+		Matrix<T> Y(M[0].size(0), Vector<T>(M.size()));
 		transpose(M, Y);
 		return Y;
 	}

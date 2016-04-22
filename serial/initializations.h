@@ -1,11 +1,8 @@
 #ifndef INITIALIZATIONS_H
 #define INITIALIZATIONS_H
 
-#include <cmath>
-#include <chrono>
-#include <assert.h>
 #include <vector>
-#include <random>
+
 /*
  * Standard initialization functions for a layer
  * Format Description:
@@ -38,4 +35,3 @@ namespace neuralnet{
 
 }
 #endif //INITIALIZATIONS_H
-

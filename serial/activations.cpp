@@ -120,5 +120,4 @@ namespace neuralnet
 		for(int i = 0; i < x.size(); i++)
 			y[i] = F(x[i]);
 	}
-
 }

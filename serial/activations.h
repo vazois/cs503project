@@ -63,4 +63,3 @@ namespace neuralnet
 }
 
 #endif // ACTIVATIONS_H
-

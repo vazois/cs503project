@@ -1,4 +1,8 @@
 #include "initializations.h"
+#include <chrono>
+#include <cmath>
+#include <assert.h>
+#include <random>
 
 /*
  * Standard initialization functions for a layer
@@ -53,4 +57,3 @@ namespace neuralnet{
 	}
 
 }
-

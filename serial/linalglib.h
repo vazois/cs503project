@@ -9,7 +9,7 @@ namespace linalglib
 	template<typename T>
 	using Vector = std::vector<T>;
 	template<typename T>
-	using Matrix = std::vector<std::vector<T> >;
+	using Matrix = Vector<Vector<T> >;
 
 	// Efficient functions for no copying overhead
 	template<typename T>
