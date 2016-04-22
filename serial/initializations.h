@@ -15,6 +15,7 @@
  */
 namespace neuralnet{
 
+	template<typename T>
 	struct Initializer
 	{
 		unsigned seed;
@@ -22,7 +23,7 @@ namespace neuralnet{
 		{
 			seed = chrono::system_clock::now().time_since_epoch().count();	
 		}
-		template<typename T>
+
 		virtual inline void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
 	};
 	
