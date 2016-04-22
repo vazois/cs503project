@@ -135,6 +135,15 @@ namespace linalglib
 				Y[j][i] = M[i][j];				
 	}
 
+	template<typename T>
+	void log(Vector<T> &x, Vector<T> &y)
+        {
+                int n = x.size();
+                assert(y.size() == n);
+                for(int i = 0; i < x.size(); i++)
+                    y[i] = log(x[i]);
+        }
+
 	// Overloaded functions with copying overheads
 	template<typename T>
 	Vector<T> add(Vector<T> &x1, Vector<T> &x2)
