@@ -1,25 +1,50 @@
 #include "CudaHelper.h"
+#include "Utils.h"
+
+
+
+template<class V>
+__host__ void printDevData(V *devAddr,unsigned int row, unsigned col){
+	V *hostAddr;
+	allocHostMem<V>(&hostAddr,sizeof(V)*row*col,"error allocating host mem in printDevData");
+	safeCpyToHost<V>(hostAddr,devAddr,sizeof(V)*row*col,"error copying to host mem in printDevData");
+
+	for(int i = 0;i<row;i++){
+		for(int j=0;j<col;j++){
+			std::cout<< hostAddr[i*row + j] << " ";
+		}
+		std::cout<<std::endl;
+	}
+	std::cout<<"<------------------>"<<std::endl;
+	//cudaFreeHost(hostAddr);
+}
+template void printDevData<float>(float *devAddr,unsigned int row, unsigned int col);
+template void printDevData<double>(double *devAddr,unsigned int row, unsigned int col);
+template void printDevData<unsigned int>(unsigned int *devAddr,unsigned int row, unsigned int col);
+template void printDevData<int>(int *devAddr,unsigned int row, unsigned int col);
 
 /*
- * Setup kernel for random number generator
- *
+ * Random number generation tools
+ * 		cudaUniRand: call inside kernel with threaIdx.x or blockIdx.x to get random float
+ * 		cudaSetupRandStatesKernel: call directly or through cudaInitRandStates to initialize states for random number.
+ * 		cudaInitRandStates: call from host to initialize random states.
  */
-__global__ void setup_kernel()
-{
-	int id = threadIdx.x + blockIdx.x * blockDim.x;
-	/* Each thread gets different seed, a different sequence
-	number, no offset */
-	curand_init(7 + id, id, 0, &devStates[id]);
+__device__ float cudaUniRand(unsigned int tid){
+	return curand_uniform(&randDevStates[tid % RAND_STATES]);
 }
 
-/*
- * Initializing random State in GPU
- *
- */
-__host__ void init_rand_gpu(){
-	setup_kernel<<< RAND_BLOCKS, RAND_THREADS >>>();
-	error = cudaDeviceSynchronize();
-	handleDeviceErrors(error, "Error Initializing Rand GPU in CudaHelper");
+__global__ void cudaSetupRandStatesKernel(unsigned int seed){
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	curand_init(seed, blockIdx.x, 0, &randDevStates[i]);
+}
+
+__host__ void cudaInitRandStates(){
+	dim3 grid = grid_1D(RAND_STATES,RAND_BLOCK_THREADS);
+	dim3 block = block_1D(RAND_BLOCK_THREADS);
+
+	Utils<unsigned int> u;
+	cudaSetupRandStatesKernel<<<grid,block>>>(u.uni(UINT_MAX));
+	handleDeviceErrors(cudaDeviceSynchronize(),"Error initializing random states");
 }
 
 /*
@@ -32,7 +57,7 @@ __host__ void handleDeviceErrors(cudaError_t error, std::string comment){
 
 /*
  * Allocating device memory
- * addr: Address in GPU
+ * addr: Address on GPU
  * size: Data size in bytes
  * msg: Error message to be displayed
  */
@@ -53,7 +78,7 @@ __host__ void allocDevMem(V **addr, unsigned int size, std::string msg){
 /*
  * Allocating Pinned Memory
  *
- * addr: Address in GPU
+ * addr: Address on GPU
  * size: Data size in bytes
  * msg: error message to be displayed
  */
@@ -108,10 +133,9 @@ __host__ void safeCpyToHost(V *to, V *from, unsigned int size, std::string msg){
 	handleDeviceErrors(error, "Error Copying to device " + msg);
 }
 
-
 /*
  * Copying to symbol
- *
+ * Deprecated: Newer versions of cuda do not support it.
  */
 template void safeCpyToSymbol<unsigned int>(unsigned int *symbol, unsigned int *data, std::string msg);
 template void safeCpyToSymbol<unsigned short>(unsigned short *symbol, unsigned short *data, std::string msg);
@@ -124,8 +148,7 @@ __host__ void safeCpyToSymbol(V *symbol, V *data, std::string msg){
 }
 
 /*
- * Print current Device Specs
- *
+ * Print all device specifications.
  */
 __host__ cudaError_t printDeviceSpecs(bool print){
 	cudaDeviceProp prop;
@@ -178,6 +201,9 @@ __host__ cudaError_t printDeviceSpecs(bool print){
 	return cudaSuccess;
 }
 
+/*
+ * Use to compute grid dimension and block dimension based on flat array space.
+ */
 dim3 grid_1D(unsigned int N, unsigned int data_per_block){
 	return dim3((N - 1) / data_per_block + 1, 1, 1);
 }
