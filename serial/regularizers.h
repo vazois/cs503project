@@ -1,7 +1,7 @@
 #ifndef REGULARIZER_H
 #define REGULARIZER_H
 
-#include <vector>
+#include "linalglib.h"
 /*
  * Regularizer of Layer Weight
  */
@@ -13,22 +13,19 @@ namespace neuralnet
 	{
 		T lambda;
 
-		Regularizer(T lambda)
-		{
-			this->lambda = lambda;
-		}
+		Regularizer(T lambda);
 
-		virtual void D(std::vector<T> &x, std::vector<T> &y, bool isTrain) = 0;
-		virtual T F(std::vector<T> &x, bool isTrain) = 0;
-		virtual T operator()(std::vector<T> &x, bool isTrain) = 0;
+		virtual void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y, bool isTrain) = 0;
+		virtual T F(linalglib::Vector<T> &x, bool isTrain) = 0;
+		virtual T operator()(linalglib::Vector<T> &x, bool isTrain) = 0;
 	};
 
 	template<typename T>
 	struct L2: public Regularizer<T>
 	{				
-		void D(std::vector<T> &x, std::vector<T> &y, bool isTrain);
-		T F(std::vector<T> &x, bool isTrain);
-		T operator()(std::vector<T> &x, bool isTrain);	
+		void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y, bool isTrain);
+		T F(linalglib::Vector<T> &x, bool isTrain);
+		T operator()(linalglib::Vector<T> &x, bool isTrain);	
 	};
 }
 

@@ -1,8 +1,8 @@
 #include "initializations.h"
 #include <chrono>
-#include <cmath>
 #include <assert.h>
 #include <random>
+#include <cmath>
 
 /*
  * Standard initialization functions for a layer
@@ -20,7 +20,7 @@ namespace neuralnet{
 	}
 
 	template<typename T>
-    void UniformRandomInitializer<T>::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
+    void UniformRandomInitializer<T>::initialize(linalglib::Matrix<T> &W, linalglib::Vector<T> &b)
 	{
 		int nRows = W.size();
 		assert(nRows > 0);
@@ -38,7 +38,7 @@ namespace neuralnet{
 	}
 	
 	template<typename T>
-	void GlorotUniformInitializer<T>::initialize(std::vector< std::vector<T> > &W, std::vector<T> &b)
+	void GlorotUniformInitializer<T>::initialize(linalglib::Matrix<T> &W, linalglib::Vector<T> &b)
 	{
 		int nRows = W.size();
 		assert(nRows > 0);

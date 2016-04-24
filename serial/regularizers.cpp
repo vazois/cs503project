@@ -1,5 +1,4 @@
 #include "regularizers.h"
-#include <cmath>
 
 /*
  * Regularizer of Layer Weight
@@ -8,27 +7,34 @@
 namespace neuralnet
 {
 	template<typename T>
-	void L2<T>::D(std::vector<T> &x, std::vector<T> &y, bool isTrain)
+	Regularizer<T>::Regularizer(T lambda)
 	{
-		for (int i = 0;i < y.size();i++)
-			y[i] = isTrain ? (2*this->lambda*x[i]) : 0;
+		this->lambda = lambda;
 	}
 
 	template<typename T>
-	T L2<T>::F(std::vector<T> &x, bool isTrain)
+	void L2<T>::D(linalglib::Vector<T> &x, linalglib::Vector<T> &y, bool isTrain)
+	{
+		if(isTrain)
+			linalglib::prod(x, 2*this->lambda, y);
+		else
+			linalglib::zeros(y);
+	}
+
+	template<typename T>
+	T L2<T>::F(linalglib::Vector<T> &x, bool isTrain)
 	{	    
 	    T ret = 0;		
 		if(isTrain)
-	    {    
-		    for (int i = 0; i < x.size(); i++)
-		        ret += pow(x[i],2);
+	    {
+	    	linalglib::dprod(x, x, ret);		    
 		    ret *= this->lambda;
 		}
 		return ret;
 	}
 
 	template<typename T>
-	T L2<T>::operator()(std::vector<T> &x, bool isTrain)
+	T L2<T>::operator()(linalglib::Vector<T> &x, bool isTrain)
 	{
 		return L2::F(x, isTrain);
 	}

@@ -1,7 +1,7 @@
 #ifndef ACTIVATIONS_H
 #define ACTIVATIONS_H
 
-#include <vector>
+#include "linalglib.h"
 
 namespace neuralnet
 {	
@@ -19,9 +19,9 @@ namespace neuralnet
 		virtual inline void F(T &x, T &y) = 0;		
 		virtual inline void operator()(T &x, T &y) = 0;
 
-		virtual void D(std::vector<T> &x, std::vector<T> &y) = 0;		
-		virtual void F(std::vector<T> &x, std::vector<T> &y) = 0;		
-		virtual void operator()(std::vector<T> &x, std::vector<T> &y) = 0;
+		virtual void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y) = 0;		
+		virtual void F(linalglib::Vector<T> &x, linalglib::Vector<T> &y) = 0;		
+		virtual void operator()(linalglib::Vector<T> &x, linalglib::Vector<T> &y) = 0;
 	};
 
 	template<typename T>
@@ -31,9 +31,9 @@ namespace neuralnet
 		void F(T &x, T &y);
 		void operator()(T &x, T &y);
 		
-		void D(std::vector<T> &x, std::vector<T> &y);
-		void F(std::vector<T> &x, std::vector<T> &y);
-		void operator()(std::vector<T> &x, std::vector<T> &y);
+		void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void F(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void operator()(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
 	};
 
 	template<typename T>
@@ -43,9 +43,9 @@ namespace neuralnet
 		void F(T &x, T &y);
 		void operator()(T &x, T &y);
 		
-		void D(std::vector<T> &x, std::vector<T> &y);
-		void F(std::vector<T> &x, std::vector<T> &y);
-		void operator()(std::vector<T> &x, std::vector<T> &y);
+		void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void F(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void operator()(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
 	};
 
 	template<typename T>
@@ -55,9 +55,9 @@ namespace neuralnet
 		void F(T &x, T &y);
 		void operator()(T &x, T &y);
 		
-		void D(std::vector<T> &x, std::vector<T> &y);
-		void F(std::vector<T> &x, std::vector<T> &y);
-		void operator()(std::vector<T> &x, std::vector<T> &y);
+		void D(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void F(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
+		void operator()(linalglib::Vector<T> &x, linalglib::Vector<T> &y);
 	};
 
 }

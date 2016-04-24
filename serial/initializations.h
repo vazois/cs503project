@@ -1,7 +1,7 @@
 #ifndef INITIALIZATIONS_H
 #define INITIALIZATIONS_H
 
-#include <vector>
+#include "linalglib.h"
 
 /*
  * Standard initialization functions for a layer
@@ -18,19 +18,19 @@ namespace neuralnet{
 		unsigned long seed;
 		Initializer();
 
-		virtual inline void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
+		virtual inline void initialize(linalglib::Matrix<T> &W, linalglib::Vector<T> &b);
 	};
 	
 	template<typename T>
 	struct UniformRandomInitializer: public Initializer<T>
 	{
-		void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
+		void initialize(linalglib::Matrix<T> &W, linalglib::Vector<T> &b);
 	};
 	
 	template<typename T>
 	struct GlorotUniformInitializer: public Initializer<T>
 	{
-		void initialize(std::vector< std::vector<T> > &W, std::vector<T> &b);
+		void initialize(linalglib::Matrix<T> &W, linalglib::Vector<T> &b);
 	};
 
 }
