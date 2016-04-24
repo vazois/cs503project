@@ -25,9 +25,9 @@ namespace neuralnet
 		// std::linalglib::Vector<WEIGHT_T> D_W;		/*Derivative w.r.t. weights*/
 		// std::linalglib::Vector<WEIGHT_T> D_b;		/*Derivative w.r.t. biases*/
 
-		Activation<WEIGHT_T> F;							/*Activation Object*/
-		Initializer<WEIGHT_T> I;						/*Initialization Object*/
-		Regularizer<WEIGHT_T> R;							/*Regularizer Object*/
+		Activation<WEIGHT_T> &F;							/*Activation Object*/
+		Initializer<WEIGHT_T> &I;						/*Initialization Object*/
+		Regularizer<WEIGHT_T> &R;							/*Regularizer Object*/
 
 		/*
 		 * Layer Constructor
