@@ -55,24 +55,30 @@ namespace gnn{
 	};
 
 	template<typename DATA_T>
-	struct ForwardBatch{
-		unsigned int batch;
+	struct LayerBatch{
+		unsigned int bsize;
 		unsigned int clayer;
-		unsigned int nlayer;
+
 
 		DATA_T *A_j;
-
-		ForwardBatch(unsigned int bz, unsigned int clz, unsigned int nlz){
-			batch = bz;
-			clayer = clz;
-			nlayer = nlz;
-
-			//allocDevMem(&W_j, sizeof(DATA_T)*clayer_act_size*nlayer_act_size, "Error Allocating");
-			allocDevMem(&A_j,sizeof(DATA_T)*batch*clayer,"Error Allocating Current Layer Batch Matrix");
-			//allocDevMem(&A_jj,sizeof(DATA_T)*batch_size*nlayer_act_size,"Error Allocating Next Layer Batch Matrix");
+		/*
+		 * Description:
+		 * 		Matrix of activation vectors for layer j.
+		 * 		Columns = number of train examples in the batch
+		 * 		Rows = number of neurons in the current layer.
+		 * Notes:
+		 *		First layer matrix size = number of input neurons x batch size
+		 */
+		LayerBatch(){
 		}
 
-		~ForwardBatch(){
+		void initLayerBatch(unsigned clz,unsigned int bz){
+			bsize = bz;
+			clayer = clz;
+			allocDevMem(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Current Layer Batch Matrix");
+		}
+
+		~LayerBatch(){
 			cudaFree(A_j);
 		}
 	};
@@ -81,8 +87,13 @@ namespace gnn{
 	struct Layer{
 		unsigned int clayer;
 		unsigned int nlayer;
-
 		DATA_T *W_j = NULL;
+
+		/*
+		 * Description:
+		 * 		Neural network layer with input weight matrix.
+		 * 		Size of matrix is input neurons x output_neurons.
+		 */
 		Layer(){
 
 		}
@@ -99,7 +110,6 @@ namespace gnn{
 
 	};
 
-
 	template<typename DATA_T, typename ACT_F>
 	class GNeuralNetwork{
 		public:
@@ -107,8 +117,17 @@ namespace gnn{
 				this->F = F;
 			};
 
+			~GNeuralNetwork(){
+				if(network != NULL) delete[] network;
+				if(examples != NULL) cudaFreeHost(examples);
+				if(lbatch != NULL) delete[] lbatch;
+			}
+
 			void createLayers(std::vector<int> layers);
 			void loadExamplesFromFile(std::string file);
+			void train();
+
+			void setBatchSize(unsigned int bz){ this->bsize = bz; }
 
 			/*
 			 * Testing methods
@@ -117,18 +136,23 @@ namespace gnn{
 			void print_weights();
 
 		private:
+			void createLayerBatch();
 			void randomInit();
 
 			unsigned int layers = 0;
-			Layer<DATA_T> *network;
-			DATA_T* examples;
+			unsigned int bsize = 0;//default value.
+			arr2D dimEx;
+			LayerBatch<DATA_T> *lbatch = NULL;
+			Layer<DATA_T> *network = NULL;
+			DATA_T *examples = NULL;
+			DATA_T *batchEx = NULL;
 			ACT_F F;
 	};
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::loadExamplesFromFile(std::string file){
 		IOTools<DATA_T> iot;
-		arr2D dim = iot.dataDim(file);
+		dimEx = iot.dataDim(file);
 		//std::cout<<"("<<dim.first<<","<<dim.second<<")"<<std::endl;
 		iot.freadFile(examples,file,true);
 		//std::cout<< examples[0*dim.first]<<"," << examples[1*dim.first]<<"," << examples[2*dim.first]<<std::endl;
@@ -136,18 +160,36 @@ namespace gnn{
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::createLayers(std::vector<int> layers){
-		network = new Layer<DATA_T>[layers.size()-1];
-
+		if(layers.size() <= 0 ) vz::error("Network architecture not valid!");
 		this->layers = layers.size();
-		for(int i = 0;i<layers.size()-1;i++){
+		network = new Layer<DATA_T>[this->layers-1];
+
+		for(int i = 0;i<this->layers-1;i++){
 			network[i].initLayer(layers[i],layers[i+1]);
 		}
-
 		randomInit();
 	}
 
+	/*
+	 * For every batch create multi-layer matrices. Each batch will result in a matrix of activation vectors for each
+	 * layer.
+	 */
+	template<typename DATA_T, typename ACT_F>
+	void GNeuralNetwork<DATA_T,ACT_F>::createLayerBatch(){
+		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
+		if(examples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
+		if(bsize > dimEx.second) bsize = dimEx.second;
+		if(lbatch != NULL) delete[] lbatch;
+		if(batchEx != NULL) cudaFree(batchEx);
+		lbatch = new LayerBatch<DATA_T>[this->layers];
 
-
+		//allocDevMem(&batchEx,sizeof(DATA_T)*network[0].clayer*this->batch,"Error allocating device memory for current batch");
+		//safeCpyToDevice<DATA_T>(batchEx,sizeof())
+		for(int i = 0; i < this->layers-1;i++){
+			lbatch[i].initLayerBatch(network[i].clayer,this->bsize);
+		}
+		lbatch[this->layers - 1].initLayerBatch(network[this->layers-2].nlayer,this->bsize);
+	}
 }
 
 

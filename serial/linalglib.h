@@ -55,6 +55,9 @@ namespace linalglib
 	template<typename T>
 	void tpose(Matrix<T> &M, Matrix<T> &Y); // transpose
 
+	template<typename T>
+	void log(Vector<T> &x, Vector<T> &y);
+
 	// Overloaded functions with copying overheads
 	template<typename T>
 	Vector<T> add(Vector<T> &x1, Vector<T> &x2);
