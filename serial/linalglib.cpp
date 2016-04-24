@@ -1,10 +1,52 @@
-#include <cmath>
-#include <vector>
 #include <assert.h>
 #include "linalglib.h"
 
 namespace linalglib
 {
+	// Matrix, Vector initializers
+	template<typename T>
+	void zeros(Vector<T> &x)
+	{
+		constant(x, 0);
+	}
+	template<typename T>
+	void zeros(Matrix<T> &M)
+	{
+		constant(M, 0);
+	}
+	template<typename T>
+	void ones(Vector<T> &x)
+	{
+		constant(x, 1);
+	}
+	template<typename T>
+	void ones(Matrix<T> &M)
+	{
+		constant(M, 1);
+	}
+	template<typename T>
+	void constant(Vector<T> &x, T c)
+	{	
+		int n = x.size();
+		for(int i = 0; i < n; i++)
+			x[i] = c;
+	}
+	template<typename T>
+	void constant(Matrix<T> &M, T c)
+	{	
+		int nRows = M.size();
+		assert(nRows > 0);
+		int nCols = M[0].size();
+		for(int i = 0; i < nRows; i++)
+		{
+			assert(M[i].size() == nCols);
+			for(int j = 0; j < nCols; j++)
+			{
+				M[i][j] = c;
+			}
+		}
+	}
+
 	// Efficient functions for no copying overhead
 	template<typename T>
 	void add(Vector<T> &x1, Vector<T> &x2, Vector<T> &y)
@@ -15,7 +57,7 @@ namespace linalglib
 			y[i] = x1[i] + x2[i];		
 	}
 	template<typename T>
-	void subtract(Vector<T> &x1, Vector<T> &x2, Vector<T> &y)
+	void sub(Vector<T> &x1, Vector<T> &x2, Vector<T> &y)
 	{
 		int n = x1.size();
 		assert(x2.size() == n && y.size() == n);
@@ -37,7 +79,7 @@ namespace linalglib
 		}
 	}
 	template<typename T>
-	void subtract(Matrix<T> &M1, Matrix<T> &M2, Matrix<T> &Y)
+	void sub(Matrix<T> &M1, Matrix<T> &M2, Matrix<T> &Y)
 	{
 		int nRows = M1.size();
 		assert(nRows > 0 && M2.size() == nRows && Y.size() == nRows);
@@ -51,7 +93,7 @@ namespace linalglib
 	}
 
 	template<typename T>
-	void product(Matrix<T> &M, Vector<T> &x, Vector<T> &y)
+	void prod(Matrix<T> &M, Vector<T> &x, Vector<T> &y)
 	{
 		int nRows = M.size();
 		assert(nRows > 0 && y.size() == nRows);
@@ -67,7 +109,7 @@ namespace linalglib
 		}
 	}
 	template<typename T>
-	void dotproduct(Vector<T> &x1, Vector<T> &x2, T &y)
+	void dprod(Vector<T> &x1, Vector<T> &x2, T &y)
 	{
 		int n = x1.size();
 		assert(x2.size() == n);
@@ -77,7 +119,7 @@ namespace linalglib
 		y = sum;
 	}
 	template<typename T>
-	void hadamardproduct(Vector<T> &x1, Vector<T> &x2, Vector<T> &y)
+	void hprod(Vector<T> &x1, Vector<T> &x2, Vector<T> &y)
 	{
 		int n = x1.size();
 		assert(x2.size() == n && y.size() == n);
@@ -86,7 +128,7 @@ namespace linalglib
 	}
 	
 	template<typename T>
-	void scalarproduct(Vector<T> &x, T &s, Vector<T> &y)
+	void prod(Vector<T> &x, T &s, Vector<T> &y)
 	{
 		int n = x.size();
 		assert(y.size() == n);
@@ -94,12 +136,12 @@ namespace linalglib
 			y[i] = x[i] * s;
 	}
 	template<typename T>
-	void scalarproduct(T &s, Vector<T> &x, Vector<T> &y)
+	void prod(T &s, Vector<T> &x, Vector<T> &y)
 	{
-		scalarproduct(x, s, y);
+		prod(x, s, y);
 	}
 	template<typename T>
-	void scalarproduct(T &s, Matrix<T> &M, Matrix<T> &Y)
+	void prod(T &s, Matrix<T> &M, Matrix<T> &Y)
 	{
 		int nRows = M.size();
 		assert(nRows > 0 && Y.size() == nRows);
@@ -112,13 +154,13 @@ namespace linalglib
 		}
 	}
 	template<typename T>
-	void scalarproduct(Matrix<T> &M, T &s, Matrix<T> &Y)
+	void prod(Matrix<T> &M, T &s, Matrix<T> &Y)
 	{
-		scalarproduct(s, M, Y);
+		prod(s, M, Y);
 	}
 
 	template<typename T>
-	void transpose(Matrix<T> &M, Matrix<T> &Y)
+	void tpose(Matrix<T> &M, Matrix<T> &Y)
 	{
 		int nRows_M = M.size();
 		int nRows_Y = Y.size();
@@ -144,10 +186,10 @@ namespace linalglib
 		return y;
 	}
 	template<typename T>
-	Vector<T> subtract(Vector<T> &x1, Vector<T> &x2)
+	Vector<T> sub(Vector<T> &x1, Vector<T> &x2)
 	{
 		Vector<T> y(x1.size());
-		subtract(x1, x2, y);
+		sub(x1, x2, y);
 		return y;
 	}
 
@@ -159,69 +201,69 @@ namespace linalglib
 		return Y;
 	}
 	template<typename T>
-	Matrix<T> subtract(Matrix<T> &M1, Matrix<T> &M2)
+	Matrix<T> sub(Matrix<T> &M1, Matrix<T> &M2)
 	{
 		Matrix<T> Y(M1.size(), Vector<T>(M1[0].size()));
-		subtract(M1, M2, Y);
+		sub(M1, M2, Y);
 		return Y;
 	}
 
 	template<typename T>
-	Vector<T> product(Matrix<T> &M, Vector<T> &x)
+	Vector<T> prod(Matrix<T> &M, Vector<T> &x)
 	{
 		Vector<T> y(M.size());
-		product(M, x, y);
+		prod(M, x, y);
 		return y;
 	}
 	template<typename T>
-	T dotproduct(Vector<T> &x1, Vector<T> &x2)
+	T dprod(Vector<T> &x1, Vector<T> &x2)
 	{
 		T y;
-		dotproduct(x1, x2, y);
+		dprod(x1, x2, y);
 		return y;
 	}
 	template<typename T>
-	Vector<T> hadamardproduct(Vector<T> &x1, Vector<T> &x2)
+	Vector<T> hprod(Vector<T> &x1, Vector<T> &x2)
 	{
 		Vector<T> y(x1.size());
-		hadamardproduct(x1, x2, y);
+		hprod(x1, x2, y);
 		return y;
 	}
 	
 	template<typename T>
-	Vector<T> scalarproduct(Vector<T> &x, T &s)
+	Vector<T> prod(Vector<T> &x, T &s)
 	{
 		Vector<T> y(x.size());
-		scalarproduct(x, s, y);
+		prod(x, s, y);
 		return y;
 	}
 	template<typename T>
-	Vector<T> scalarproduct(T &s, Vector<T> &x)
+	Vector<T> prod(T &s, Vector<T> &x)
 	{
 		Vector<T> y(x.size());
-		scalarproduct(x, s, y);
+		prod(x, s, y);
 		return y;	
 	}
 	template<typename T>
-	Matrix<T> scalarproduct(T &s, Matrix<T> &M)
+	Matrix<T> prod(T &s, Matrix<T> &M)
 	{
 		Matrix<T> Y(M.size(), Vector<T>(M[0].size()));
-		scalarproduct(s, M, Y);
+		prod(s, M, Y);
 		return Y;
 	}
 	template<typename T>
-	Matrix<T> scalarproduct(Matrix<T> &M, T &s)
+	Matrix<T> prod(Matrix<T> &M, T &s)
 	{
 		Matrix<T> Y(M.size(), Vector<T>(M[0].size()));
-		scalarproduct(s, M, Y);
+		prod(s, M, Y);
 		return Y;	
 	}
 
 	template<typename T>
-	Matrix<T> transpose(Matrix<T> &M)
+	Matrix<T> tpose(Matrix<T> &M)
 	{
 		Matrix<T> Y(M[0].size(0), Vector<T>(M.size()));
-		transpose(M, Y);
+		tpose(M, Y);
 		return Y;
 	}
 }
