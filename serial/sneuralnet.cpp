@@ -23,6 +23,8 @@ namespace neuralnet
 	template<typename WEIGHT_T>
 	SNeuralNet<T>::addLayer( Layer<WEIGHT_T>& layer )
 	{
+		Layer<WEIGHT_T> &prevLayer = this->layers[this->layers.size() - 1];
+		assert( prevLayer->n_out == layer->n_in );
 		this->layers.push_back(layer);
 	}
 	
