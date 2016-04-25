@@ -120,7 +120,7 @@ namespace gnn{
 			~GNeuralNetwork(){
 				if(network != NULL) delete[] network;
 				if(examples != NULL) cudaFreeHost(examples);
-				if(lbatch != NULL) delete[] lbatch;
+				if(batch != NULL) delete[] batch;
 			}
 
 			void createLayers(std::vector<int> layers);
@@ -128,6 +128,7 @@ namespace gnn{
 			void train();
 
 			void setBatchSize(unsigned int bz){ this->bsize = bz; }
+			void setTransposeExamples(bool transpose){ this->transpose = transpose; }
 
 			/*
 			 * Testing methods
@@ -141,8 +142,9 @@ namespace gnn{
 
 			unsigned int layers = 0;
 			unsigned int bsize = 0;//default value.
+			bool transpose = true;
 			arr2D dimEx;
-			LayerBatch<DATA_T> *lbatch = NULL;
+			LayerBatch<DATA_T> *batch = NULL;
 			Layer<DATA_T> *network = NULL;
 			DATA_T *examples = NULL;
 			DATA_T *batchEx = NULL;
@@ -179,16 +181,16 @@ namespace gnn{
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(examples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
 		if(bsize > dimEx.second) bsize = dimEx.second;
-		if(lbatch != NULL) delete[] lbatch;
+		if(batch != NULL) delete[] batch;
 		if(batchEx != NULL) cudaFree(batchEx);
-		lbatch = new LayerBatch<DATA_T>[this->layers];
+		batch = new LayerBatch<DATA_T>[this->layers];
 
 		//allocDevMem(&batchEx,sizeof(DATA_T)*network[0].clayer*this->batch,"Error allocating device memory for current batch");
 		//safeCpyToDevice<DATA_T>(batchEx,sizeof())
 		for(int i = 0; i < this->layers-1;i++){
-			lbatch[i].initLayerBatch(network[i].clayer,this->bsize);
+			batch[i].initLayerBatch(network[i].clayer,this->bsize);
 		}
-		lbatch[this->layers - 1].initLayerBatch(network[this->layers-2].nlayer,this->bsize);
+		batch[this->layers - 1].initLayerBatch(network[this->layers-2].nlayer,this->bsize);
 	}
 }
 
