@@ -174,7 +174,8 @@ namespace gnn_kernels{
 
 			for(int j=0;j<TILE;j++){
 				int index = j * TILE + threadIdx.x;
-				Dj += sWj[index] * sDjj[index];
+				//Dj += sWj[index] * sDjj[index];
+				Dj += sWj[index];
 			}
 			__syncthreads();
 		}
