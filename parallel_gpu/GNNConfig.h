@@ -61,6 +61,7 @@ namespace gnn{
 
 
 		DATA_T *A_j;
+		DATA_T *D_j;
 		/*
 		 * Description:
 		 * 		Matrix of activation vectors for layer j.
@@ -72,10 +73,11 @@ namespace gnn{
 		LayerBatch(){
 		}
 
-		void initLayerBatch(unsigned clz,unsigned int bz){
+		void initLayerBatch(unsigned clz,unsigned int bz, bool input){
 			bsize = bz;
 			clayer = clz;
-			allocDevMem(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Current Layer Batch Matrix");
+			allocDevMem(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Activation Layer Batch Matrix");
+			if(!input) allocDevMem(&D_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Delta Layer Batch Matrix");
 		}
 
 		~LayerBatch(){
@@ -147,7 +149,6 @@ namespace gnn{
 			LayerBatch<DATA_T> *batch = NULL;
 			Layer<DATA_T> *network = NULL;
 			DATA_T *examples = NULL;
-			DATA_T *batchEx = NULL;
 			ACT_F F;
 	};
 
@@ -182,15 +183,10 @@ namespace gnn{
 		if(examples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
 		if(bsize > dimEx.second) bsize = dimEx.second;
 		if(batch != NULL) delete[] batch;
-		if(batchEx != NULL) cudaFree(batchEx);
 		batch = new LayerBatch<DATA_T>[this->layers];
 
-		//allocDevMem(&batchEx,sizeof(DATA_T)*network[0].clayer*this->batch,"Error allocating device memory for current batch");
-		//safeCpyToDevice<DATA_T>(batchEx,sizeof())
-		for(int i = 0; i < this->layers-1;i++){
-			batch[i].initLayerBatch(network[i].clayer,this->bsize);
-		}
-		batch[this->layers - 1].initLayerBatch(network[this->layers-2].nlayer,this->bsize);
+		batch[0].initLayerBatch(network[0].clayer,this->bsize,true);
+		for(int i = 0; i < this->layers-1;i++) batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
 	}
 }
 

@@ -31,7 +31,7 @@ void example_gpu_initializing_weights(ArgParser ap){
 	layers.push_back(16); //HIDDEN 1
 	layers.push_back(12); //HIDDEN 2
 	layers.push_back(14); //HIDDEN 3
-	layers.push_back(4); //OUTPUT
+	layers.push_back(8); //OUTPUT
 
 	s.setBatchSize(4);
 	s.createLayers(layers);

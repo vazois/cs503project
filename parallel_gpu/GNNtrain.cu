@@ -2,7 +2,8 @@
 #include "../common/Time.h"
 
 #define LOAD_TILE 4
-#define BATCH_TILE 2
+#define ACT_TILE 32
+#define DELTA_TILE 4
 
 namespace gnn_kernels{
 
@@ -27,7 +28,8 @@ namespace gnn_kernels{
 
 		if( i < clayer * nlayer){
 			//W_j[i] = cudaUniRand(i);
-			W_j[i] = i;
+			//W_j[i] = i;
+			W_j[i] = 0.01 * i;
 		}
 	}
 	/*
@@ -77,33 +79,110 @@ namespace gnn_kernels{
 	 *		5: 	Offset: 0 for hidden and output layer, corresponding row of training example matrix for input layer.
 	 */
 	template<typename DATA_T, typename ACT_F, unsigned int TILE>
-	__global__ void batchActivation(
-			DATA_T *A_jj, DATA_T *W_j, DATA_T *A_j, ACT_F F,
-			unsigned int clayer, unsigned int nlayer, unsigned int bsize){
+	__global__ void	mmul(
+			DATA_T *A_jj,
+			DATA_T *W_j,
+			DATA_T *A_j,
+			ACT_F F,
+			unsigned int nlayer,
+			unsigned int clayer,
+			unsigned int bsize
+			)
+	{
 		__shared__ DATA_T sWj[TILE * TILE];
 		__shared__ DATA_T sAj[TILE * TILE];
 
-		int row = ( blockIdx.y * TILE + threadIdx.y ) * clayer + threadIdx.x;
-		int col = ( blockIdx.x * TILE + threadIdx.y * bsize) + threadIdx.x;
-		int Ajj = 0;
+		int row = ( blockIdx.y * blockDim.y + threadIdx.y );
+		int col = ( blockIdx.x * blockDim.x + threadIdx.x );
+		DATA_T Ajj = 0;
 
-		for(int i = 0; i < clayer / TILE ; i++){
-			sWj[threadIdx.y*TILE + threadIdx.x] = W_j[row];
-			sAj[threadIdx.y*TILE + threadIdx.x] = A_j[col];
+		int loadOffset = threadIdx.y*TILE + threadIdx.x;
+		for(int i = 0;i < ((clayer - 1) / TILE) + 1; i++){
+			if( row < nlayer && (i * TILE + threadIdx.x ) < clayer)
+				sWj[loadOffset] = W_j[ row * clayer + i * TILE  + threadIdx.x];
+			else sWj[loadOffset] = 0.0;
+
+			if ( i*TILE + threadIdx.y < clayer && col < bsize )
+				sAj[loadOffset] = A_j[(i * TILE + threadIdx.y) * bsize + col];
+			else sAj[loadOffset] = 0.0;
 			__syncthreads();
-			for(int j = 0; j < TILE; j++){
+
+			for(int j = 0;j < TILE; j++){
 				Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
-				//Ajj += sWj[threadIdx.y * TILE + j];
 			}
-			row += TILE;
-			col += bsize * TILE;
 			__syncthreads();
 		}
-		//A_jj[(blockIdx.y * bsize + blockIdx.x) * TILE + threadIdx.y * bsize + threadIdx.x]
-			// = (blockIdx.y * bsize + blockIdx.x) * TILE + threadIdx.y * bsize + threadIdx.x;
-		//A_jj[(blockIdx.y * bsize + blockIdx.x) * TILE + threadIdx.y * bsize + threadIdx.x] = W_j[row];
-		//A_jj[(blockIdx.y * bsize + blockIdx.x) * TILE + threadIdx.y * bsize + threadIdx.x] = A_j[col];
-			A_jj[(blockIdx.y * bsize + blockIdx.x) * TILE + threadIdx.y * bsize + threadIdx.x] = Ajj;
+		// ( blockIdx.y * blockDim.y + threadIdx.y ) * bsize + blockIdx.x * blockDim.x + threadIdx.x
+		// row * bsize + col
+		if( row < nlayer && col < bsize )
+			A_jj[row * bsize + col ] = Ajj;
+			//A_jj[row * bsize + col ] = F.F(Ajj);
+	}
+
+	/*
+	 * Kernel that computes the last layer difference between the batch activation matrix and the expected output
+	 * matrix.
+	 */
+	template<typename DATA_T>
+	__global__ void outputD(
+			DATA_T *D_j,
+			DATA_T *ExA_j,
+			DATA_T *A_j,
+			unsigned int size
+		)
+	{
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+		if ( i < size){
+			D_j[i] = ExA_j[i] - A_j[i];
+		}
+
+	}
+
+	template<typename DATA_T, unsigned int TILE>
+	__global__ void tmmul(
+			DATA_T *D_j,
+			DATA_T *W_j,
+			DATA_T *D_jj,
+			unsigned int clayer,
+			unsigned int nlayer,
+			unsigned int bsize
+			)
+	{
+		//grid = (bsize / TILE + 1), clayer / TILE + 1
+		//block = (TILE, TILE)
+		__shared__ DATA_T sWj[TILE * TILE];
+		__shared__ DATA_T sDjj[TILE * TILE];
+
+		DATA_T Dj = 0.0;
+		int colW = ( blockIdx.y * blockDim.y + threadIdx.x );// by * TILE + ty * clayer + threadIdx.x
+		int colD = ( blockIdx.x * blockDim.x + threadIdx.x );
+
+		int loadOffset = threadIdx.y*TILE + threadIdx.x;
+		for(int i = 0; i < (nlayer - 1) / TILE + 1 ; i++){
+			if( i * TILE +  threadIdx.y < nlayer && colW < clayer)
+				sWj[loadOffset] = W_j[ (i * TILE +  threadIdx.y) * clayer + colW ];
+			else
+				sWj[loadOffset] = 0.0;
+
+			if((i * TILE + threadIdx.y) < nlayer && colD < bsize)
+				sDjj[loadOffset] = D_jj[ (i * TILE + threadIdx.y) * bsize + colD ];
+			else
+				sDjj[loadOffset] = 0.0;
+
+			__syncthreads();
+
+			for(int j=0;j<TILE;j++){
+				int index = j * TILE + threadIdx.x;
+				Dj += sWj[index] * sDjj[index];
+			}
+			__syncthreads();
+		}
+
+		int row = ( blockIdx.y * blockDim.y + threadIdx.y );
+		if( row < clayer && colD < bsize)
+			D_j[row * bsize + colD] = Dj;
+
 	}
 
 	template<typename DATA_T>
@@ -157,29 +236,108 @@ namespace gnn{
 				gnn_kernels::loadBatch<DATA_T><<<32,256>>>(flayer.A_j,examples,flayer.clayer,flayer.bsize,bRow);
 			}
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing load batch");
-
 			//std::cout<<flayer.clayer << " x " << flayer.bsize << std::endl;
 			//print_grid(lgrid,lblock);
 			//gnn_kernels::printGPU<DATA_T><<<1,1>>>(flayer.A_j,flayer.clayer,flayer.bsize);
 
-			for(int j = 0;j < 1;j++){
-				//dim3 agrid((lbatch[]));
-				dim3 agrid((batch[j+1].bsize - 1)/BATCH_TILE + 1, (batch[j+1].clayer - 1)/BATCH_TILE + 1);
-				dim3 ablock(BATCH_TILE,BATCH_TILE);
-				gnn_kernels::batchActivation<DATA_T,ACT_F,BATCH_TILE><<<agrid,ablock>>>
+			/*
+			 * Neural network feed forward step.
+			 */
+			//for(int k =0;k<layers;k++){
+			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
+			//		}
+			//		printf("<<<<<)))))))))))>\n");
+			for(int j = 0;j < this->layers - 1;j++){
+				dim3 agrid((batch[j+1].bsize - 1)/ACT_TILE + 1, (batch[j+1].clayer - 1)/ACT_TILE + 1);
+				dim3 ablock(ACT_TILE,ACT_TILE);
+				gnn_kernels::mmul<DATA_T,ACT_F,ACT_TILE><<<agrid,ablock>>>
 						(
 								batch[j+1].A_j,
 								network[j].W_j,
 								batch[j].A_j,
 								F,
-								network[j].clayer,
 								network[j].nlayer,
+								network[j].clayer,
 								batch[j].bsize
 						);
+				handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch activation");
+
+				/*printf(">>>>>>ACTIVATION<<<<<<< %d\n",j);
+				printf("B(%d) = W(%d) * B(%d)\n",j+1,j,j);
 				print_grid(agrid,ablock);
-				gnn_kernels::printGPU<DATA_T><<<1,1>>>(network[j].W_j,network[j].nlayer,network[j].clayer);
-				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].A_j,batch[j].clayer,batch[j].bsize);
 				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j+1].A_j,batch[j+1].clayer,batch[j+1].bsize);
+				cudaDeviceSynchronize();
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(network[j].W_j,network[j].nlayer,network[j].clayer);
+				cudaDeviceSynchronize();
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].A_j,batch[j].clayer,batch[j].bsize);
+				cudaDeviceSynchronize();*/
+			}
+
+
+			/*
+			 * Back propagation step.
+			 */
+			//for(int k =0;k<layers;k++){
+			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
+			//		}
+			//		printf("<<<<<)))))))))))>\n");
+			dim3 ogrid = grid_1D(batch[layers-1].clayer * batch[layers-1].bsize, 256);
+			dim3 oblock = block_1D(256);
+			gnn_kernels::outputD<DATA_T><<<ogrid,oblock>>>(
+					batch[layers-1].D_j,
+					batch[0].A_j,////TODO: Initialize Y matrix correctly
+					batch[layers-1].A_j,
+					batch[layers-1].clayer * batch[layers-1].bsize
+				);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing outputD kernel");
+
+			/*printf(">>>>>>Output Delta<<<<<<<\n");
+			print_grid(ogrid,oblock);
+			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].D_j,batch[layers-1].clayer,batch[layers-1].bsize);
+			cudaDeviceSynchronize();
+			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[0].A_j,batch[0].clayer,batch[0].bsize);
+			cudaDeviceSynchronize();
+			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].A_j,batch[layers-1].clayer,batch[layers-1].bsize);
+			cudaDeviceSynchronize();*/
+
+			/*
+			 * Backpropagation transpose matrix multiplication.
+			 * 		for i = layers-1 : > 1 : i--
+			 * 		batch[i-1].D_j = network[i-1].W_j * batch[i].D_j
+			 * 		grid = (batch[i-1].bsize / TILE + 1), batch[i-1].clayer / TILE + 1
+			 * 		block = (TILE, TILE)
+			 */
+
+			//for(int k =0;k<layers;k++){
+			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
+			//		}
+			///		printf("<<<<<)))))))))))>\n");
+			for(int j = layers-1; j > 1 ; j--){
+					dim3 dgrid((batch[j-1].bsize - 1) / DELTA_TILE + 1, (batch[j-1].clayer - 1) / DELTA_TILE + 1);
+					dim3 dblock(DELTA_TILE, DELTA_TILE);
+					printf(">>>>>>Hidden Layer Delta<<<<<<<\n");
+					printf("(%d,%d,%d)\n",j-1,batch[j-1].clayer,batch[j-1].bsize);
+					printf("(%d,%d,%d)\n",j-1,network[j-1].nlayer,network[j-1].clayer);
+					print_grid(dgrid,dblock);
+
+					gnn_kernels::tmmul<DATA_T,DELTA_TILE><<<dgrid,dblock>>>(
+							batch[j-1].D_j,
+							network[j-1].W_j,
+							batch[j].D_j,
+							network[j-1].clayer,
+							network[j-1].nlayer,
+							batch[j].bsize
+							);
+					handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
+
+					gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j-1].D_j,batch[j-1].clayer,batch[j-1].bsize);
+					cudaDeviceSynchronize();
+					gnn_kernels::printGPU<DATA_T><<<1,1>>>(network[j-1].W_j,network[j-1].nlayer,network[j-1].clayer);
+					cudaDeviceSynchronize();
+					gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].D_j,batch[j].clayer,batch[j].bsize);
+					cudaDeviceSynchronize();
+
+					break;
 			}
 		}
 
