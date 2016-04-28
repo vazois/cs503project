@@ -1,4 +1,5 @@
 #include <cmath>
+#include "matrixop.h"
 
 void mvProd(float **M, float *x, float *y, int m, int n)
 {
