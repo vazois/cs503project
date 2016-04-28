@@ -33,5 +33,27 @@ namespace neuralnet
 	{
 		// Fill it when you can
 	}
+
+	template<typename T>
+	void Objectives<T>::evaluate(linalglib::Vector<T> &x_train, linalglib::Vector<T> &y_out)
+	{
+		linalglib::Vector<T> *ret = &x_train;
+		for(int i = 0; i < this->net->layers.size(); i++)			
+		{
+			this->net->layers[i]->fcompute(*ret);
+			ret = &(this->net->layers[i]->y);
+		}
+
+		y_out = *ret;
+	}
+
+	template<typename T>
+	void Objectives<T>::evaluate(linalglib::Matrix<T> &X_train, linalglib::Matrix<T> &Y_out)
+	{
+		int batch_size = X_train.size();
+		assert(Y_out.size() == batch_size);
+		for(int i = 0; i < batch_size; i++)
+			evaluate(X_train[i], Y_out[i]);
+	}
 	
 }

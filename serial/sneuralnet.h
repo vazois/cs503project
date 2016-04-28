@@ -18,6 +18,8 @@ namespace neuralnet
 		void addLayer(int n_out, Activation<WEIGHT_T>& F, Initializer<WEIGHT_T>& I, Regularizer<WEIGHT_T>& R);
 		void addLayer(Layer<WEIGHT_T>& layer);
 		void train();
-	}
+		void evaluate(linalglib::Vector<T> &x_train, linalglib::Vector<T> &y_out);
+		void evaluate(linalglib::Matrix<T> &X_train, linalglib::Matrix<T> &Y_out);
+	};
 }
 #endif // SNEURALNET_H

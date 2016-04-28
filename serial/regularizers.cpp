@@ -23,6 +23,7 @@ namespace neuralnet
 
 	template<typename T>
 	T L2<T>::F(linalglib::Vector<T> &x, bool isTrain)
+	// Param isTrain has default value = True
 	{	    
 	    T ret = 0;		
 		if(isTrain)
@@ -35,6 +36,7 @@ namespace neuralnet
 
 	template<typename T>
 	T L2<T>::operator()(linalglib::Vector<T> &x, bool isTrain)
+	// Param isTrain has default value = True
 	{
 		return L2::F(x, isTrain);
 	}
