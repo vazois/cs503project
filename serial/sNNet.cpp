@@ -13,6 +13,8 @@
 #include <vector>
 #include <sstream>
 
+#include "matrixop.h"
+
 using namespace std;
 
 int num_layers;
