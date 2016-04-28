@@ -30,16 +30,16 @@ void add(float *x1, float *x2, float* y, int n)
 		y[i] = x1[i] + x2[i];
 }
 
-void sigmoid(float *x, float *y, int n)
-{
-	for(int i = 0; i < n; i++)
-		y[i] = 1/(1 + exp(-x[i]));
-}
-
 void hprod(float *x1, float *x2, float *y, int n)
 {
 	for(int i = 0; i < n; i++)
 		y[i] = x1[i]*x2[i];
+}
+
+void sigmoid(float *x, float *y, int n)
+{
+	for(int i = 0; i < n; i++)
+		y[i] = 1/(1 + exp(-x[i]));
 }
 
 void dSigmoid(float *x, float *y, int n)
@@ -49,6 +49,33 @@ void dSigmoid(float *x, float *y, int n)
 	{
 		temp = 1/(1 + exp(-x[i]));
 		y[i] = temp * (1 - temp);
+	}
+}
+
+void softmax(float *x, float *y, int n)
+{
+	float sum = 0;
+	for(int i = 0; i < n; i++)
+	{
+		y[i] = exp(x[i]);
+		sum += y[i];
+	}
+	for(int i = 0; i < n; i++)
+		y[i] /= sum;
+}
+
+void softmaxD(float *x, float *y, int n)
+{
+	float sum = 0;
+	for(int i = 0; i < n; i++)
+	{
+		y[i] = exp(x[i]);
+		sum += y[i];
+	}
+	for(int i = 0; i < n; i++)
+	{
+		y[i] /= sum;
+		y[i] = y[i] * (1 - y[i]);
 	}
 }
 
