@@ -6,23 +6,23 @@
 #include<iostream>
 
 void example_gpu_bench_act(){
-	gnn::Sigmoid gs;
-	gnn::FSigmoid gfs;
-	gnn::Arctan gatan;
+	gnn_actf::Sigmoid gs;
+	gnn_actf::FSigmoid gfs;
+	gnn_actf::Arctan gatan;
 
-	gnn::GNeuralNetwork<float,gnn::Sigmoid> s(gs);
+	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 	s.bench_act();
 
-	gnn::GNeuralNetwork<float,gnn::FSigmoid> fs(gfs);
+	gnn::GNeuralNetwork<float,gnn_actf::FSigmoid> fs(gfs);
 	fs.bench_act();
 
-	gnn::GNeuralNetwork<float,gnn::Arctan> at(gatan);
+	gnn::GNeuralNetwork<float,gnn_actf::Arctan> at(gatan);
 	at.bench_act();
 }
 
-void example_gpu_initializing_weights(ArgParser ap){
-	gnn::Sigmoid gs;
-	gnn::GNeuralNetwork<float,gnn::Sigmoid> s(gs);
+void example_gpu_train(ArgParser ap){
+	gnn_actf::Sigmoid gs;
+	gnn::GNeuralNetwork<double,gnn_actf::Sigmoid> s(gs);
 	if(!ap.exists(FIARG)) vz::error("Please provide input file!!!");
 	s.loadExamplesFromFile(ap.getString(FIARG));
 	std::vector<int> layers;
@@ -36,14 +36,18 @@ void example_gpu_initializing_weights(ArgParser ap){
 	s.setBatchSize(4);
 	s.createLayers(layers);
 	//s.print_weights();
+	//s.train();
 
-	s.train();
+	//s.bench_test_kernels(MMUL,577,612,758,false);
+	//s.bench_test_kernels(MMUL,7,13,11, true);
+	//s.bench_test_kernels(TMMUL,618,722,356, false);
+	s.bench_test_kernels(MHPROD,618,722,356, false);
 }
 
 int main(int argc, char **argv){
 	ArgParser ap;
 	ap.parseArgs(argc,argv);
-	example_gpu_bench_act(); std::cout<<"<----------------------------------->" << std::endl;
-	example_gpu_initializing_weights(ap);
+	//example_gpu_bench_act(); std::cout<<"<----------------------------------->" << std::endl;
+	example_gpu_train(ap);
 
 }

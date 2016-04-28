@@ -3,7 +3,10 @@
 
 #define LOAD_TILE 4
 #define ACT_TILE 32
-#define DELTA_TILE 4
+#define DELTA_TILE 16
+
+#define DPT 4 //DATA PER THREADS
+#define BSIZE 512
 
 namespace gnn_kernels{
 
@@ -28,8 +31,8 @@ namespace gnn_kernels{
 
 		if( i < clayer * nlayer){
 			//W_j[i] = cudaUniRand(i);
-			//W_j[i] = i;
-			W_j[i] = 0.01 * i;
+			//W_j[i] = i/1024 + 128;
+			W_j[i] = 0.1 * i;
 		}
 	}
 	/*
@@ -107,16 +110,10 @@ namespace gnn_kernels{
 			else sAj[loadOffset] = 0.0;
 			__syncthreads();
 
-			for(int j = 0;j < TILE; j++){
-				Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
-			}
+			for(int j = 0;j < TILE; j++) Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
 			__syncthreads();
 		}
-		// ( blockIdx.y * blockDim.y + threadIdx.y ) * bsize + blockIdx.x * blockDim.x + threadIdx.x
-		// row * bsize + col
-		if( row < nlayer && col < bsize )
-			A_jj[row * bsize + col ] = Ajj;
-			//A_jj[row * bsize + col ] = F.F(Ajj);
+		if( row < nlayer && col < bsize ) A_jj[row * bsize + col ] = Ajj;//TODO: enable activation//
 	}
 
 	/*
@@ -132,13 +129,13 @@ namespace gnn_kernels{
 		)
 	{
 		int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-		if ( i < size){
-			D_j[i] = ExA_j[i] - A_j[i];
-		}
-
+		if ( i < size){ D_j[i] = ExA_j[i] - A_j[i]; }
 	}
 
+	/*
+	 * Transpose matrix multiplication.
+	 *  D_j = (W_j)^T . D_jj
+	 */
 	template<typename DATA_T, unsigned int TILE>
 	__global__ void tmmul(
 			DATA_T *D_j,
@@ -149,8 +146,6 @@ namespace gnn_kernels{
 			unsigned int bsize
 			)
 	{
-		//grid = (bsize / TILE + 1), clayer / TILE + 1
-		//block = (TILE, TILE)
 		__shared__ DATA_T sWj[TILE * TILE];
 		__shared__ DATA_T sDjj[TILE * TILE];
 
@@ -160,7 +155,7 @@ namespace gnn_kernels{
 
 		int loadOffset = threadIdx.y*TILE + threadIdx.x;
 		for(int i = 0; i < (nlayer - 1) / TILE + 1 ; i++){
-			if( i * TILE +  threadIdx.y < nlayer && colW < clayer)
+			if( (i * TILE +  threadIdx.y) < nlayer && colW < clayer)
 				sWj[loadOffset] = W_j[ (i * TILE +  threadIdx.y) * clayer + colW ];
 			else
 				sWj[loadOffset] = 0.0;
@@ -169,32 +164,46 @@ namespace gnn_kernels{
 				sDjj[loadOffset] = D_jj[ (i * TILE + threadIdx.y) * bsize + colD ];
 			else
 				sDjj[loadOffset] = 0.0;
-
 			__syncthreads();
 
-			for(int j=0;j<TILE;j++){
-				int index = j * TILE + threadIdx.x;
-				//Dj += sWj[index] * sDjj[index];
-				Dj += sWj[index];
-			}
+			for(int j=0;j<TILE;j++) Dj += sWj[j * TILE + threadIdx.y] * sDjj[j * TILE + threadIdx.x];
 			__syncthreads();
 		}
 
 		int row = ( blockIdx.y * blockDim.y + threadIdx.y );
-		if( row < clayer && colD < bsize)
-			D_j[row * bsize + colD] = Dj;
+		if( row < clayer && colD < bsize) D_j[row * bsize + colD] = Dj;
+	}
 
+	/*
+	 * Matrix Hadamard product
+	 */
+	template<typename DATA_T, typename ACT_F>
+	__global__ void mhprod(
+			DATA_T *D_j,
+			DATA_T *A_j,
+			ACT_F F,
+			unsigned int clayer,
+			unsigned int bsize
+		){
+
+		int step = gridDim.x * blockDim.x;
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+		while( i < clayer * bsize){
+			DATA_T Aj = A_j[i];
+			D_j[i] *= F.D(Aj);
+			i+=step;
+		}
 	}
 
 	template<typename DATA_T>
 	__global__ void printGPU(DATA_T *A, unsigned int row, unsigned int col){
 		for(int i =0;i<row*col;i++){
-			printf("%.2f ", A[i]);
+			printf("%.6f ", A[i]);
 			if((i+1)% col == 0) printf("\n");
 		}
-		printf("<-------------------------------------------->\n");
+		//printf("<-------------------------------------------->\n");
 	}
-
 }
 
 namespace gnn{
@@ -212,6 +221,7 @@ namespace gnn{
 			dim3 grid = grid_1D(vector_size,256);
 			dim3 block = block_1D(256);
 			gnn_kernels::randomWeights<DATA_T><<<grid,block>>>(network[i].W_j,network[i].clayer,network[i].nlayer);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing randomWeights kernel");
 		}
 	}
 
@@ -223,7 +233,7 @@ namespace gnn{
 		createLayerBatch();
 
 		for(int i = 0;i < 1;i++){
-			LayerBatch<DATA_T> flayer = batch[0];
+			gnn_data::LayerBatch<DATA_T> flayer = batch[0];
 			unsigned int bRow = i * this->bsize * flayer.clayer;
 
 			dim3 lgrid((flayer.clayer-1)/LOAD_TILE + 1,(flayer.bsize - 1)/LOAD_TILE + 1,1);
@@ -244,10 +254,6 @@ namespace gnn{
 			/*
 			 * Neural network feed forward step.
 			 */
-			//for(int k =0;k<layers;k++){
-			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
-			//		}
-			//		printf("<<<<<)))))))))))>\n");
 			for(int j = 0;j < this->layers - 1;j++){
 				dim3 agrid((batch[j+1].bsize - 1)/ACT_TILE + 1, (batch[j+1].clayer - 1)/ACT_TILE + 1);
 				dim3 ablock(ACT_TILE,ACT_TILE);
@@ -274,14 +280,9 @@ namespace gnn{
 				cudaDeviceSynchronize();*/
 			}
 
-
 			/*
 			 * Back propagation step.
 			 */
-			//for(int k =0;k<layers;k++){
-			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
-			//		}
-			//		printf("<<<<<)))))))))))>\n");
 			dim3 ogrid = grid_1D(batch[layers-1].clayer * batch[layers-1].bsize, 256);
 			dim3 oblock = block_1D(256);
 			gnn_kernels::outputD<DATA_T><<<ogrid,oblock>>>(
@@ -308,29 +309,25 @@ namespace gnn{
 			 * 		grid = (batch[i-1].bsize / TILE + 1), batch[i-1].clayer / TILE + 1
 			 * 		block = (TILE, TILE)
 			 */
-
-			//for(int k =0;k<layers;k++){
-			//			printf("b(%d) = c(%d),bz(%d)\n",k,batch[k].clayer,batch[k].bsize);
-			//		}
-			///		printf("<<<<<)))))))))))>\n");
 			for(int j = layers-1; j > 1 ; j--){
 					dim3 dgrid((batch[j-1].bsize - 1) / DELTA_TILE + 1, (batch[j-1].clayer - 1) / DELTA_TILE + 1);
 					dim3 dblock(DELTA_TILE, DELTA_TILE);
-					printf(">>>>>>Hidden Layer Delta<<<<<<<\n");
-					printf("(%d,%d,%d)\n",j-1,batch[j-1].clayer,batch[j-1].bsize);
-					printf("(%d,%d,%d)\n",j-1,network[j-1].nlayer,network[j-1].clayer);
-					print_grid(dgrid,dblock);
+
 
 					gnn_kernels::tmmul<DATA_T,DELTA_TILE><<<dgrid,dblock>>>(
-							batch[j-1].D_j,
-							network[j-1].W_j,
-							batch[j].D_j,
+							batch[j-1].D_j,//(clayer x bsize)
+							network[j-1].W_j,//(nlayer x clayer)
+							batch[j].D_j,// (nlayer x bsize)
 							network[j-1].clayer,
 							network[j-1].nlayer,
 							batch[j].bsize
 							);
 					handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
 
+					printf(">>>>>>Hidden Layer Delta<<<<<<<\n");
+					//printf("(%d,%d,%d)\n",j-1,batch[j-1].clayer,batch[j-1].bsize);
+					//printf("(%d,%d,%d)\n",j-1,network[j-1].nlayer,network[j-1].clayer);
+					print_grid(dgrid,dblock);
 					gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j-1].D_j,batch[j-1].clayer,batch[j-1].bsize);
 					cudaDeviceSynchronize();
 					gnn_kernels::printGPU<DATA_T><<<1,1>>>(network[j-1].W_j,network[j-1].nlayer,network[j-1].clayer);
@@ -388,7 +385,170 @@ namespace gnn{
 
 	}
 
-	template class GNeuralNetwork<float,gnn::Sigmoid>;
-	template class GNeuralNetwork<float,gnn::FSigmoid>;
-	template class GNeuralNetwork<float,gnn::Arctan>;
+	template<typename DATA_T, typename ACT_F>
+	void GNeuralNetwork<DATA_T,ACT_F>::bench_test_kernels(UnitTest test,unsigned int m, unsigned int n, unsigned int k,
+			bool debug){
+		DATA_T *hostA, *hostB, *hostC, *hostD;
+		DATA_T *devA, *devB, *devC;
+
+		allocDevMem<DATA_T>(&devA,sizeof(DATA_T) * m * n, "Error allocating devA memory");
+		allocDevMem<DATA_T>(&devB,sizeof(DATA_T) * n * k, "Error allocating devB memory");
+		allocDevMem<DATA_T>(&devC,sizeof(DATA_T) * m * k, "Error allocating devC memory");
+
+		allocHostMem<DATA_T>(&hostA,sizeof(DATA_T) * m * n, "Error allocating devA memory");
+		allocHostMem<DATA_T>(&hostB,sizeof(DATA_T) * n * k, "Error allocating devB memory");
+		allocHostMem<DATA_T>(&hostC,sizeof(DATA_T) * m * k, "Error allocating devC memory");
+
+		dim3 rgrid;
+		dim3 rblock = block_1D(256);
+		rgrid = grid_1D(m * n,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devA,m,n);
+		rgrid = grid_1D(n * k,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devB,n,k);
+		rgrid = grid_1D(m * k,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devC,m,k);
+
+		if(test == MMUL){
+			dim3 agrid((k - 1)/ACT_TILE + 1, (m - 1)/ACT_TILE + 1);
+			dim3 ablock(ACT_TILE,ACT_TILE);
+			Time<millis> t;
+			t.start();
+			gnn_kernels::mmul<DATA_T,ACT_F,ACT_TILE><<<agrid,ablock>>>
+					(
+							devC,
+							devA,
+							devB,
+							F,
+							m,
+							n,
+							k
+					);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmul");
+			if(!debug) t.lap("GPU mmul elapsed time");
+
+			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * m * k, "Error allocating devC memory");
+			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*m*n,"Error copying devA to host");
+			safeCpyToHost<DATA_T>(hostB,devB,sizeof(DATA_T)*n*k,"Error copying devB to host");
+			safeCpyToHost<DATA_T>(hostC,devC,sizeof(DATA_T)*m*k,"Error copying devC to host");
+
+			t.start();
+			for(int x = 0; x < m; x++){//3
+				for (int y = 0; y < k; y++){//3
+					hostD[x * k + y] = 0.0;
+					for (int z = 0; z < n; z++){//2
+						hostD[x * k + y] += hostA[x * n + z] * hostB[z * k + y];
+					}
+				}
+			}
+			if(!debug) t.lap("CPU serial mmul elapsed time");
+			if(debug){
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devC,m,k);
+				cudaDeviceSynchronize(); printf("<----->\n");
+				/*gnn_kernels::printGPU<DATA_T><<<1,1>>>(devA,m,n);
+				cudaDeviceSynchronize(); printf("<----->\n");
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devB,n,k);
+				cudaDeviceSynchronize(); printf("<----->\n");*/
+				for(int x = 0; x<m * k;x++){
+					printf("%.6f ", hostD[x]);
+					if((x+1)%k==0) printf("\n");
+				}
+			}else{
+				for(int x = 0; x<m * k;x++){
+					if(((hostD[x] - hostC[x]) > 0.001 )){
+						printf("Result matrices do not match(%f,%f)!!!\n",hostD[x],hostC[x] );
+					}
+				}
+			}
+			cudaFreeHost(hostD);
+		}else if(test == TMMUL){
+			// devB = devA * devC
+			// (n x k) = (m x n) (m x k) <=> (n x k) = (m x n)^T (m x k) <=> (n x k) = (n x m) (m x k)
+			Time<millis> t;
+			dim3 agrid((k - 1)/DELTA_TILE + 1, (n - 1)/DELTA_TILE + 1);
+			dim3 ablock(DELTA_TILE,DELTA_TILE);
+			t.start();
+			gnn_kernels::tmmul<DATA_T,DELTA_TILE><<<agrid,ablock>>>(
+					devB,//n
+					devA,//
+					devC,//
+					n,
+					m,
+					k
+			);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
+			if(!debug) t.lap("GPU tmmul elapsed time");
+
+			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * n * k, "Error allocating devC memory");
+			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*m*n,"Error copying devA to host");
+			safeCpyToHost<DATA_T>(hostB,devB,sizeof(DATA_T)*n*k,"Error copying devB to host");
+			safeCpyToHost<DATA_T>(hostC,devC,sizeof(DATA_T)*m*k,"Error copying devC to host");
+
+			t.start();
+			for(int x = 0; x < n; x++){//3
+				for (int y = 0; y < k; y++){//3
+					hostD[x * k + y] = 0.0;
+					for (int z = 0; z < m; z++){//2
+						hostD[x * k + y] += hostA[z * n + x] * hostC[z * k + y];
+					}
+				}
+			}
+			if(!debug) t.lap("CPU serial mmul elapsed time");
+
+			if(debug){
+				print_grid(agrid,ablock);
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devB,n,k);
+				cudaDeviceSynchronize(); printf("<--()-->\n");
+				//gnn_kernels::printGPU<DATA_T><<<1,1>>>(devA,m,n);
+				//cudaDeviceSynchronize(); printf("<----->\n");
+				//gnn_kernels::printGPU<DATA_T><<<1,1>>>(devC,m,k);
+				//cudaDeviceSynchronize(); printf("<----->\n");
+				for(int x = 0; x<n * k;x++){
+					printf("%.6f ", hostD[x]);
+					if((x+1)%k==0) printf("\n");
+				}
+			}else{
+				for(int x = 0; x<m * k;x++){
+					if(((hostD[x] - hostB[x]) > 0.001 )){
+						printf("Result matrices do not match(%f,%f)!!!\n",hostD[x],hostB[x] );
+					}
+				}
+			}
+			cudaFreeHost(hostD);
+		}else if (test == MHPROD){
+			dim3 grid = grid_1D(m * n, BSIZE * DPT);
+			dim3 block = block_1D(BSIZE);
+			print_grid(grid,block);
+
+			DATA_T *devD;
+			allocDevMem<DATA_T>(&devD,sizeof(DATA_T)*m*n,"Error allocating devD memory");
+			rgrid = grid_1D(m * n,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devD,m,n);
+
+			if(debug){
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devA,m,n);
+				cudaDeviceSynchronize(); printf("<----->\n");
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devD,m,n);
+				cudaDeviceSynchronize(); printf("<----->\n");
+			}
+
+			Time<millis> t;
+			if(!debug) t.start();
+			gnn_kernels::mhprod<DATA_T,ACT_F><<<grid,block>>>(devA,devD,F,n,m);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing mhprod kernel");
+			if(!debug) t.lap("mhprod elapsed time");
+
+			if(debug){
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devA,m,n);
+				cudaDeviceSynchronize(); printf("<----->\n");
+			}
+			cudaFree(devD);
+		}
+
+		cudaFree(devA); cudaFree(devB); cudaFree(devC);
+		cudaFreeHost(hostA); cudaFreeHost(hostB); cudaFreeHost(hostC); cudaFreeHost(hostD);
+	}
+
+	template class GNeuralNetwork<float,gnn_actf::Sigmoid>;
+	template class GNeuralNetwork<float,gnn_actf::FSigmoid>;
+	template class GNeuralNetwork<float,gnn_actf::Arctan>;
+
+	template class GNeuralNetwork<double,gnn_actf::Sigmoid>;
+	template class GNeuralNetwork<double,gnn_actf::FSigmoid>;
+	template class GNeuralNetwork<double,gnn_actf::Arctan>;
 }

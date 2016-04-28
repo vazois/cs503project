@@ -6,20 +6,19 @@
 #include "../common/CudaHelper.h"
 #include "../common/IOTools.h"
 
+enum UnitTest{
+		MMUL,//MATRIX MULTIPLICATION
+		TMMUL,//TRANSPOSE MATRIX MULTIPLICATION
+		OUTDM,//OUTPUT DELTA COMPUTATION
+		MHPROD//MATRIX HADAMARD PRODUCT
+	};
 
-namespace gnn{
-/*
- * GPU thread work organization for feed forward step.
- * - Multiple training examples for a single block.
- * - Activation of neurons for different examples concurrently.
- * - Shared memory used to store weight matrix
- */
-
+namespace gnn_actf{
 	struct Sigmoid{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return F(x)*F(1-x);
+			return x * (1-x);
 		}
 
 		template<typename T>
@@ -53,12 +52,13 @@ namespace gnn{
 			return 	tanhf(x);
 		}
 	};
+}
 
+namespace gnn_data{
 	template<typename DATA_T>
 	struct LayerBatch{
 		unsigned int bsize;
 		unsigned int clayer;
-
 
 		DATA_T *A_j;
 		DATA_T *D_j;
@@ -86,32 +86,34 @@ namespace gnn{
 	};
 
 	template<typename DATA_T>
-	struct Layer{
-		unsigned int clayer;
-		unsigned int nlayer;
-		DATA_T *W_j = NULL;
+		struct Layer{
+			unsigned int clayer;
+			unsigned int nlayer;
+			DATA_T *W_j = NULL;
 
-		/*
-		 * Description:
-		 * 		Neural network layer with input weight matrix.
-		 * 		Size of matrix is input neurons x output_neurons.
-		 */
-		Layer(){
+			/*
+			 * Description:
+			 * 		Neural network layer with input weight matrix.
+			 * 		Size of matrix is input neurons x output_neurons.
+			 */
+			Layer(){
 
-		}
+			}
 
-		void initLayer(unsigned int clz, unsigned int nlz){
-			clayer = clz;
-			nlayer = nlz;
-			allocDevMem(&W_j, sizeof(DATA_T)*clayer*nlayer, "Error Allocating Weight Matrix");
-		}
+			void initLayer(unsigned int clz, unsigned int nlz){
+				clayer = clz;
+				nlayer = nlz;
+				allocDevMem(&W_j, sizeof(DATA_T)*clayer*nlayer, "Error Allocating Weight Matrix");
+			}
 
-		~Layer(){
-			if(W_j != NULL)cudaFree(W_j);
-		}
+			~Layer(){
+				if(W_j != NULL)cudaFree(W_j);
+			}
 
-	};
+		};
+}
 
+namespace gnn{
 	template<typename DATA_T, typename ACT_F>
 	class GNeuralNetwork{
 		public:
@@ -137,6 +139,7 @@ namespace gnn{
 			 */
 			void bench_act();
 			void print_weights();
+			void bench_test_kernels(UnitTest test,unsigned int m, unsigned int n, unsigned int k, bool debug);
 
 		private:
 			void createLayerBatch();
@@ -146,8 +149,8 @@ namespace gnn{
 			unsigned int bsize = 0;//default value.
 			bool transpose = true;
 			arr2D dimEx;
-			LayerBatch<DATA_T> *batch = NULL;
-			Layer<DATA_T> *network = NULL;
+			gnn_data::LayerBatch<DATA_T> *batch = NULL;
+			gnn_data::Layer<DATA_T> *network = NULL;
 			DATA_T *examples = NULL;
 			ACT_F F;
 	};
@@ -165,7 +168,7 @@ namespace gnn{
 	void GNeuralNetwork<DATA_T,ACT_F>::createLayers(std::vector<int> layers){
 		if(layers.size() <= 0 ) vz::error("Network architecture not valid!");
 		this->layers = layers.size();
-		network = new Layer<DATA_T>[this->layers-1];
+		network = new gnn_data::Layer<DATA_T>[this->layers-1];
 
 		for(int i = 0;i<this->layers-1;i++){
 			network[i].initLayer(layers[i],layers[i+1]);
@@ -183,7 +186,7 @@ namespace gnn{
 		if(examples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
 		if(bsize > dimEx.second) bsize = dimEx.second;
 		if(batch != NULL) delete[] batch;
-		batch = new LayerBatch<DATA_T>[this->layers];
+		batch = new gnn_data::LayerBatch<DATA_T>[this->layers];
 
 		batch[0].initLayerBatch(network[0].clayer,this->bsize,true);
 		for(int i = 0; i < this->layers-1;i++) batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);

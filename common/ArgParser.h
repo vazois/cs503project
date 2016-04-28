@@ -73,10 +73,10 @@ void ArgParser::parseArgs(int argc, char **argv){
 	for(int i = 1;i<argc;i++){
 		std::vector<std::string> tokens = this->split(std::string(argv[i]),"=");
 		if(tokens.size() == 2){
-			std::cout<<tokens[0] << "," << tokens[1] << std::endl;
+			//std::cout<<tokens[0] << "," << tokens[1] << std::endl;
 			this->addArg(tokens[0],tokens[1]);
 		}else{
-			std::cout<<tokens[0] << "," << "empty" << std::endl;
+			//std::cout<<tokens[0] << "," << "empty" << std::endl;
 			this->addArg(tokens[0],"empty");
 		}
 	}

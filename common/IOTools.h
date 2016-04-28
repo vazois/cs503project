@@ -82,8 +82,8 @@ void IOTools<DATA_T>::freadFile(DATA_T *& data, std::string file, bool pinned){
 	buffer[totalbytes] = '\0';
 	fclose(fp);
 
-	Time<millis> t;
-	t.start();
+	//Time<millis> t;
+	//t.start();
 	uint64_t i = 0;
 	uint64_t j = 0;
 	char number[64];
@@ -97,7 +97,7 @@ void IOTools<DATA_T>::freadFile(DATA_T *& data, std::string file, bool pinned){
 		//std::cout<<"NUMBER: "<<number<<","<<data[i-1]<< "\n";
 		j++;
 	}
-	t.lap("Read File Elapsed time");
+	//t.lap("Read File Elapsed time");
 }
 
 
