@@ -1,6 +1,18 @@
 #include <cmath>
 #include "matrixop.h"
 
+void prod(float *x, float s, float *y, int n)
+{
+	for(int i = 0; i < n; i++)
+		y[i] = x[i]*s;
+}
+
+void prod(float s, float *x, float *y, int n)
+{
+	for(int i = 0; i < n; i++)
+		y[i] = x[i]*s;
+}
+
 void mvProd(float **M, float *x, float *y, int m, int n)
 {
 	float sum = 0;
