@@ -7,6 +7,13 @@
 
 using namespace std;
 
+float **x_train, **y_train, **x_test, **y_test, **x_val, **y_val;
+const int NUM_CLASSES = 10;
+const int NUM_TRAIN = 50000;
+const int NUM_TEST = 10000;
+const int NUM_VAL = 10000;
+const int NUM_FEATURES = 784;
+
 void dataset_mem_alloc()
 {
 	x_train = (float**) malloc(NUM_TRAIN * sizeof(float*));

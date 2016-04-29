@@ -26,9 +26,6 @@ float *delC_a, ***delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 2e-3;
 
-int nSamples_train;
-int nSamples_val;
-int nSamples_test;
 int miniBatchSize = 100;
 int nEpochs = 50;
 
@@ -214,14 +211,14 @@ float testBatch(int start_idx, int end_idx, int dataset_type)
 
 void train()
 {
-	int numMiniBatches = nSamples_train/miniBatchSize;
+	int numMiniBatches = NUM_TRAIN/miniBatchSize;
 	float accuracy;
 	initializeGlorot();
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		accuracy = testBatch(0, nSamples_test - 1, 2);
+		accuracy = testBatch(0, NUM_TEST - 1, 2);
 		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
 	}
 }
@@ -229,6 +226,7 @@ void train()
 int main(int argc, char *argv[])
 {
 	allocate_memory();
+	readData();
 	
 	train();
 }
