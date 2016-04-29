@@ -14,19 +14,23 @@
 #include <sstream>
 
 #include "matrixop.h"
+#include "datalib.h"
 
 using namespace std;
 
 int num_layers;
 int *layers_size;
 float ***w, **b, **delta, **a, **z, **sigDz;
-float *delC_a, ***delC_w;
+float *delC_a, ***delC_w, **delC_b;
 
-float **x_train, **y_train;
-float **x_test, **y_test;
-float **x_val, **y_val;
+float lambda = 1e-3;
+float alpha = 2e-3;
 
-float lambda;
+int nSamples_train;
+int nSamples_val;
+int nSamples_test;
+int miniBatchSize = 100;
+int nEpochs = 50;
 
 void allocate_memory()
 {
@@ -41,6 +45,7 @@ void allocate_memory()
 	delC_w = (float ***)malloc( (num_layers - 1) * sizeof(float **) );
 	b = (float **)malloc( (num_layers - 1) * sizeof(float *) ); // b idx 0 corresponds to 1st hidden layer
 	delta = (float **)malloc( (num_layers - 1) * sizeof(float *) ); // delta idx 0 corresponds to 1st hidden layer
+	delC_b = (float **)malloc( (num_layers - 1) * sizeof(float *) );
 	a = (float **)malloc( (num_layers - 1) * sizeof(float *) ); // a idx 0 corresponds to 1st hidden layer
 	z = (float **)malloc( (num_layers - 1) * sizeof(float *) ); // z idx 0 corresponds to 1st hidden layer
 	sigDz = (float **)malloc( (num_layers - 1) * sizeof(float *) );
@@ -50,6 +55,7 @@ void allocate_memory()
 		delC_w[i] = (float **)malloc( layers_size[i] * sizeof(float *) );
 		b[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		delta[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
+		delC_b[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		a[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		z[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		sigDz[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
@@ -62,7 +68,6 @@ void allocate_memory()
 	delC_a = (float *)malloc( layers_size[num_layers - 1] * sizeof(float) );
 	assert(delC_a != NULL);
 }
-
 
 void initializeGlorot()
 {
@@ -117,9 +122,89 @@ void backwardPass(int idx)
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
 		mvProd(w[i+1], delta[i+1], temp, layers_size[i+1], layers_size[i+2]);
 		hprod(temp, sigDz[i], delta[i], layers_size[i+1]);
+		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		for( int j = 0; j < layers_size[i]; j++)
 			for( int k = 0; k < layers_size[i+1]; k++)
-					delC_w[i][j][k] = ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + lambda;
+					delC_w[i][j][k] += ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + lambda;
+	}
+}
+
+void initDeriv()
+{
+	for(int i = 0; i < num_layers - 1; i++)
+		for(int j = 0; j < layers_size[i+1]; j++)
+			delC_b[i][j] = 0;
+	for(int i = 0; i < num_layers - 1; i++)
+		for(int j = 0; j < layers_size[i]; j++)
+			for(int k = 0; k < layers_size[i+1]; k++)
+				delC_w[i][j][k] = 0;
+}
+
+void updateStochastic(int idx, int dataset_type)
+{
+	initDeriv();
+	forwardPass(idx, dataset_type);
+	backwardPass(idx);
+	for(int i = 0; i < num_layers - 1; i++)
+		add(b[i], -alpha*delC_b[i], b[i], layers_size[i+1]);
+	for(int i = 0; i < num_layers - 1; i++)
+		for(int j = 0; j < layers_size[i]; j++)
+			add(w[i][j], -alpha*delC_w[i][j], w[i][j], layers_size[i+1]);
+}
+
+void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
+{
+	initDeriv();
+	for(int i = start_idx; i <= end_idx; i++)
+	{
+		forwardPass(i, dataset_type);
+		backwardPass(i);
+	}
+	for(int i = 0; i < num_layers - 1; i++)
+		add(b[i], -(alpha/(end_idx - start_idx + 1))*delta[i], b[i], layers_size[i+1]);
+	for(int i = 0; i < num_layers - 1; i++)
+		for(int j = 0; j < layers_size[i]; j++)
+			add(w[i][j], -(alpha/(end_idx - start_idx + 1))*delC_w[i][j], w[i][j], layers_size[i+1]);
+}
+
+void trainStochastic(int idx)
+{
+	update(idx, 1);
+}
+
+void trainMiniBatch(int start_idx, int end_idx)
+{
+	updateMiniBatch(start_idx, end_idx, 1);
+}
+
+int test(int idx, int dataset_type)
+{
+	forwardPass(idx, dataset_type);
+	if(equals(a[num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
+		return 1;
+	return 0;
+}
+
+float testBatch(int start_idx, int end_idx, int dataset_type)
+{
+	int accuracy = 0;
+	for(int i = start_idx; i <= end_idx; i++)
+		accuracy += test(i, dataset_type);
+	accuracy /= (end_idx - start_idx + 1);
+	return accuracy;
+}
+
+void train()
+{
+	int numMiniBatches = nSamples_train/miniBatchSize;
+	float accuracy;
+	initializeGlorot();
+	for(int epoch = 0; epoch < nEpochs; epoch++)
+	{
+		for(int i = 0; i < numMiniBatches; i++)
+			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
+		accuracy = testBatch(0, nSamples_test - 1, 2);
+		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
 	}
 }
 
@@ -127,5 +212,6 @@ int main(int argc, char *argv[])
 {
 	allocate_memory();
 	
+	train();
 }
 
