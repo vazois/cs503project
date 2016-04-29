@@ -71,12 +71,13 @@ void allocate_memory()
 
 void initializeGlorot()
 {
-	seed = std::chrono::system_clock::now().time_since_epoch().count();
+	unsigned long seed = chrono::system_clock::now().time_since_epoch().count();
 	default_random_engine generator(seed);
-	uniform_real_distribution<T> distribution(-1.0,1.0);
-	float glorotConstant = sqrt(6)/sqrt(nRows + nCols);
+	uniform_real_distribution<float> distribution(-1.0,1.0);
+	
 	for(int i = 0; i < num_layers - 1; i++)
 	{
+		float glorotConstant = sqrt(6)/sqrt(layers_size[i + 1] + layers_size[i]);
 		for(int j = 0; j < layers_size[i + 1]; j++)
 		{
 			for(int k = 0; k < layers_size[i]; k++)
@@ -99,18 +100,19 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	}
 	add(z[0], b[0], z[0], layers_size[1]);
 	sigmoid(z[0], a[0], layers_size[1]);
-	for( int i = 1; i < num_layers - 2; i++)
+	int i;
+	for( i = 1; i < num_layers - 2; i++)
 	{
 		mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 		add(z[i], b[i], z[i], layers_size[i+1]);
 		sigmoid(z[i], a[i], layers_size[i+1]);
-		dSigmoid(z[i], sigDz[i]);
+		dSigmoid(z[i], sigDz[i], layers_size[i+1]);
 	}
 	// Add the softmax layer
 	mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 	add(z[i], b[i], z[i], layers_size[i+1]);
 	softmax(z[i], a[i], layers_size[i+1]);
-	softmaxD(z[i], sigDz[i]);
+	softmaxD(z[i], sigDz[i], layers_size[i+1]);
 }
 
 void backwardPass(int idx)
@@ -146,10 +148,18 @@ void updateStochastic(int idx, int dataset_type)
 	forwardPass(idx, dataset_type);
 	backwardPass(idx);
 	for(int i = 0; i < num_layers - 1; i++)
-		add(b[i], -alpha*delC_b[i], b[i], layers_size[i+1]);
+	{
+		prod(-alpha, delC_b[i], delC_b[i], layers_size[i+1]);
+		add(b[i], -delC_b[i], b[i], layers_size[i+1]);
+	}
 	for(int i = 0; i < num_layers - 1; i++)
+	{
 		for(int j = 0; j < layers_size[i]; j++)
-			add(w[i][j], -alpha*delC_w[i][j], w[i][j], layers_size[i+1]);
+		{
+			prod(-alpha, delC_w[i][j], delC_w[i][j], layers_size[i+1]);
+			add(w[i][j], delC_w[i][j], w[i][j], layers_size[i+1]);
+		}
+	}
 }
 
 void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
@@ -161,10 +171,18 @@ void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 		backwardPass(i);
 	}
 	for(int i = 0; i < num_layers - 1; i++)
-		add(b[i], -(alpha/(end_idx - start_idx + 1))*delta[i], b[i], layers_size[i+1]);
+	{
+		prod(-(alpha/(end_idx - start_idx + 1)), delC_b[i], delC_b[i], layers_size[i+1]);
+		add(b[i], delC_b[i], b[i], layers_size[i+1]);
+	}
 	for(int i = 0; i < num_layers - 1; i++)
+	{
 		for(int j = 0; j < layers_size[i]; j++)
-			add(w[i][j], -(alpha/(end_idx - start_idx + 1))*delC_w[i][j], w[i][j], layers_size[i+1]);
+		{
+			prod(-(alpha/(end_idx - start_idx + 1)), delC_w[i][j], delC_w[i][j], layers_size[i+1]);
+			add(w[i][j], delC_w[i][j], w[i][j], layers_size[i+1]);
+		}
+	}
 }
 
 void trainStochastic(int idx)
