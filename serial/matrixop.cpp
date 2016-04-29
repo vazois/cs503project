@@ -108,3 +108,18 @@ void costFnD(float *y_train, float *y_pred, float *delC_a, int n)
 	for(int i = 0; i < n; i++)
 		delC_a[i] = -y_train[i]/y_pred[i];
 }
+
+bool equals(float* pred, float* label, int n)
+{
+	float max = -1;
+	int maxpos = -1;
+	for(int i = 0; i < n; i++)
+	{
+		if(pred[i] > max)
+		{
+			max = pred[i];
+			maxpos = i;
+		}
+	}
+	return (label[maxpos] == 1);
+}

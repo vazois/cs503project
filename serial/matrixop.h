@@ -17,3 +17,5 @@ void softmaxD(float *x, float *y, int n);
 float costFn(float *y_train, float *y_pred, float ***w, float lambda, int m, int n, int l, int n_out);
 
 void costFnD(float *y_train, float *y_pred, float *delC_a, int n);
+
+bool equals(float* pred, float* label, int n);
