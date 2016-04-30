@@ -100,16 +100,10 @@ float costFn(float *y_train, float *y_pred, float ***w, float lambda, int m, int
 	
 	float cost_reg = 0;
 	for(int i = 0; i < m; i++)
-	{
 		for(int j = 0; j < n; j++)
-		{
 			for(int k = 0; k < l; k++)
-			{
 				cost_reg += (w[i][j][k]*w[i][j][k]);
-			}
-		}
 
-	}
 	cost_reg *= lambda;
 	cost += cost_reg;
 	return cost;

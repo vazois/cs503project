@@ -124,7 +124,7 @@ void backwardPass(int idx)
 		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		for( int j = 0; j < layers_size[i]; j++)
 			for( int k = 0; k < layers_size[i+1]; k++)
-					delC_w[i][j][k] += ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + lambda;
+				delC_w[i][j][k] += ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + 2*lambda*w[i][j][k];
 	}
 }
 
