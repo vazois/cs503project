@@ -13,12 +13,16 @@ enum UnitTest{
 		MHPROD//MATRIX HADAMARD PRODUCT
 	};
 
+#define ZEROS 0
+#define ONES 1
+#define RANDOM 2
+
 namespace gnn_actf{
 	struct Sigmoid{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return x * (1-x);
+			return F(x) * F(1-x);
 		}
 
 		template<typename T>
@@ -55,6 +59,7 @@ namespace gnn_actf{
 }
 
 namespace gnn_data{
+
 	template<typename DATA_T>
 	struct LayerBatch{
 		unsigned int bsize;
@@ -62,6 +67,7 @@ namespace gnn_data{
 
 		DATA_T *A_j;
 		DATA_T *D_j;
+		DATA_T *Y;
 		/*
 		 * Description:
 		 * 		Matrix of activation vectors for layer j.
@@ -76,8 +82,12 @@ namespace gnn_data{
 		void initLayerBatch(unsigned clz,unsigned int bz, bool input){
 			bsize = bz;
 			clayer = clz;
-			allocDevMem(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Activation Layer Batch Matrix");
-			if(!input) allocDevMem(&D_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Delta Layer Batch Matrix");
+			allocDevMem<DATA_T>(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Activation Layer Batch Matrix");
+			if(!input) allocDevMem<DATA_T>(&D_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Delta Layer Batch Matrix");
+		}
+
+		void initOutputBatch(){
+			allocDevMem<DATA_T>(&Y, sizeof(DATA_T)*clayer * bsize, "Error allocating Output Y matrix");
 		}
 
 		~LayerBatch(){
@@ -103,7 +113,7 @@ namespace gnn_data{
 			void initLayer(unsigned int clz, unsigned int nlz){
 				clayer = clz;
 				nlayer = nlz;
-				allocDevMem(&W_j, sizeof(DATA_T)*clayer*nlayer, "Error Allocating Weight Matrix");
+				allocDevMem<DATA_T>(&W_j, sizeof(DATA_T)*clayer*nlayer, "Error Allocating Weight Matrix");
 			}
 
 			~Layer(){
@@ -170,8 +180,9 @@ namespace gnn{
 		this->layers = layers.size();
 		network = new gnn_data::Layer<DATA_T>[this->layers-1];
 
+		/*clayer+1 = Weight matrix includes additional column for bias. nlayer x (clayer + 1)*/
 		for(int i = 0;i<this->layers-1;i++){
-			network[i].initLayer(layers[i],layers[i+1]);
+			network[i].initLayer(layers[i]+1,layers[i+1]);
 		}
 		randomInit();
 	}
@@ -188,8 +199,15 @@ namespace gnn{
 		if(batch != NULL) delete[] batch;
 		batch = new gnn_data::LayerBatch<DATA_T>[this->layers];
 
-		batch[0].initLayerBatch(network[0].clayer,this->bsize,true);
-		for(int i = 0; i < this->layers-1;i++) batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
+		/*(clayer - 1) = Activation does not include bias vector*/
+		batch[0].initLayerBatch(network[0].clayer-1,this->bsize,true);
+		//std::cout<< network[0].clayer-1 <<"<>"<<this->bsize << std::endl;
+		/*nlayer is current layer without bias vector for activation matrix*/
+		for(int i = 0; i < this->layers-1;i++){
+			//std::cout<< network[i].nlayer <<"<>"<< this->bsize << std::endl;
+			batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
+		}
+		batch[this->layers-1].initOutputBatch();//Initialize Y Matrix
 	}
 }
 

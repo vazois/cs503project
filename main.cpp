@@ -27,21 +27,22 @@ void example_gpu_train(ArgParser ap){
 	s.loadExamplesFromFile(ap.getString(FIARG));
 	std::vector<int> layers;
 
-	layers.push_back(8); //INPUT
-	layers.push_back(16); //HIDDEN 1
-	layers.push_back(12); //HIDDEN 2
-	layers.push_back(14); //HIDDEN 3
-	layers.push_back(8); //OUTPUT
+	layers.push_back(4); //INPUT
+	layers.push_back(6); //HIDDEN 1
+	layers.push_back(4); // HIDDEN 2
+	layers.push_back(8); //HIDDEN 3
+	layers.push_back(7); //HIDDEN 4
+	layers.push_back(4); //OUTPUT
 
 	s.setBatchSize(4);
 	s.createLayers(layers);
 	//s.print_weights();
-	//s.train();
+	s.train();
 
-	//s.bench_test_kernels(MMUL,577,612,758,false);
-	//s.bench_test_kernels(MMUL,7,13,11, true);
+	//s.bench_test_kernels(MMUL,1112,912,1231,false);
+	//s.bench_test_kernels(TMMUL,3,4,3, true);
 	//s.bench_test_kernels(TMMUL,618,722,356, false);
-	s.bench_test_kernels(MHPROD,618,722,356, false);
+	//s.bench_test_kernels(MHPROD,12,5,4, true);
 }
 
 int main(int argc, char **argv){
