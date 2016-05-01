@@ -174,7 +174,7 @@ void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 	}
 	for(int i = 0; i < num_layers - 1; i++)
 	{
-		prod(-(alpha/(end_idx - start_idx + 1)), delC_b[i], delC_b[i], layers_size[i+1]);
+		prod(-(alpha/(end_idx - start_idx + 1)), delC_b[i], delC_b[i], layers_size[i+1]);///(end_idx - start_idx + 1)
 		add(b[i], delC_b[i], b[i], layers_size[i+1]);
 	}
 	for(int i = 0; i < num_layers - 1; i++)

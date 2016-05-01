@@ -57,7 +57,7 @@ void sigmoid(float *x, float *y, int n)
 
 void dSigmoid(float *x, float *y, int n)
 {
-	int temp = 0;
+	float temp = 0;
 	for(int i = 0; i < n; i++)
 	{
 		temp = 1/(1 + exp(-x[i]));
