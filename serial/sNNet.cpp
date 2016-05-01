@@ -97,6 +97,7 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	}
 	add(z[0], b[0], z[0], layers_size[1]);
 	sigmoid(z[0], a[0], layers_size[1]);
+	dSigmoid(z[0], sigDz[0], layers_size[1]);
 	int i;
 	for( i = 1; i < num_layers - 2; i++)
 	{
@@ -116,6 +117,10 @@ void backwardPass(int idx)
 {
 	costFnD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
 	hprod(delC_a, sigDz[num_layers - 2], delta[num_layers - 2], layers_size[num_layers - 1]);
+	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
+	for( int j = 0; j < layers_size[i]; j++)
+		for( int k = 0; k < layers_size[i+1]; k++)
+			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][k] : x_train[idx][j])*delta[num_layers - 2][j] + 2*lambda*w[num_layers - 2][j][k];
 	for(int i = num_layers - 3; i > 0; i--)
 	{
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
@@ -202,7 +207,7 @@ int test(int idx, int dataset_type)
 
 float testBatch(int start_idx, int end_idx, int dataset_type)
 {
-	int accuracy = 0;
+	float accuracy = 0;
 	for(int i = start_idx; i <= end_idx; i++)
 		accuracy += test(i, dataset_type);
 	accuracy /= (end_idx - start_idx + 1);
