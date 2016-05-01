@@ -9,7 +9,7 @@ extern const int NUM_FEATURES;
 
 extern float **x_train, **y_train, **x_test, **y_test, **x_val, **y_val;
 
-void readData();
+void readData(bool normalize = false);
 
 void dataset_mem_alloc();
 

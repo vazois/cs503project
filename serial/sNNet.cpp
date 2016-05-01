@@ -242,7 +242,7 @@ void train()
 int main(int argc, char *argv[])
 {
 	allocate_memory();
-	readData();
+	readData(false);
 	
 	train();
 }
