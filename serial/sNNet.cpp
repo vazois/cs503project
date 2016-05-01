@@ -24,9 +24,9 @@ float ***w, **b, **delta, **a, **z, **sigDz;
 float *delC_a, ***delC_w, **delC_b;
 
 float lambda = 1e-3;
-float alpha = 2e-3;
+float alpha = 1e-2;
 
-int miniBatchSize = 100;
+int miniBatchSize = 1000;
 int nEpochs = 50;
 
 void allocate_memory()
@@ -118,10 +118,10 @@ void backwardPass(int idx)
 	costFnD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
 	hprod(delC_a, sigDz[num_layers - 2], delta[num_layers - 2], layers_size[num_layers - 1]);
 	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
-	for( int j = 0; j < layers_size[i]; j++)
-		for( int k = 0; k < layers_size[i+1]; k++)
-			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][k] : x_train[idx][j])*delta[num_layers - 2][j] + 2*lambda*w[num_layers - 2][j][k];
-	for(int i = num_layers - 3; i > 0; i--)
+	for( int j = 0; j < layers_size[num_layers - 2]; j++)
+		for( int k = 0; k < layers_size[num_layers - 1]; k++)
+			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][j] : x_train[idx][j])*delta[num_layers - 2][k] + 2*lambda*w[num_layers - 2][j][k];
+	for(int i = num_layers - 3; i >= 0; i--)
 	{
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
 		mvProd(w[i+1], delta[i+1], temp, layers_size[i+1], layers_size[i+2]);
@@ -129,7 +129,7 @@ void backwardPass(int idx)
 		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		for( int j = 0; j < layers_size[i]; j++)
 			for( int k = 0; k < layers_size[i+1]; k++)
-				delC_w[i][j][k] += ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + 2*lambda*w[i][j][k];
+				delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] + 2*lambda*w[i][j][k];
 	}
 }
 
@@ -200,8 +200,19 @@ void trainMiniBatch(int start_idx, int end_idx)
 int test(int idx, int dataset_type)
 {
 	forwardPass(idx, dataset_type);
-	if(equals(a[num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
-		return 1;
+	switch(dataset_type)
+	{
+		case 1: if(equals(a[num_layers - 2], y_train[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+		case 2: if(equals(a[num_layers - 2], y_val[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+		case 3: if(equals(a[num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+	}
+	
 	return 0;
 }
 
@@ -223,7 +234,7 @@ void train()
 	{
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		accuracy = testBatch(0, NUM_TEST - 1, 2);
+		accuracy = testBatch(0, NUM_VAL - 1, 2);
 		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
 	}
 }

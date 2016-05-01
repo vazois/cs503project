@@ -11,4 +11,6 @@ extern float **x_train, **y_train, **x_test, **y_test, **x_val, **y_val;
 
 void readData();
 
+void dataset_mem_alloc();
+
 #endif // DATALIB_H
