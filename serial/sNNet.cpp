@@ -24,7 +24,7 @@ float ***w, **b, **delta, **a, **z, **sigDz;
 float *delC_a, ***delC_w, **delC_b;
 
 float lambda = 1e-3;
-float alpha = 1e-2;
+float alpha = 1e-1;
 
 int miniBatchSize = 1000;
 int nEpochs = 50;
