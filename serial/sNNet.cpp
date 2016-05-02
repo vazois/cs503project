@@ -24,9 +24,9 @@ float ***w, **b, **delta, **a, **z, **sigDz;
 float *delC_a, ***delC_w, **delC_b;
 
 float lambda = 1e-3;
-float alpha = 2e-3;
+float alpha = 1e-2;
 
-int miniBatchSize = 100;
+int miniBatchSize = 1000;
 int nEpochs = 50;
 
 void allocate_memory()
@@ -97,8 +97,9 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	}
 	add(z[0], b[0], z[0], layers_size[1]);
 	sigmoid(z[0], a[0], layers_size[1]);
+	dSigmoid(z[0], sigDz[0], layers_size[1]);
 	int i;
-	for( i = 1; i < num_layers - 2; i++)
+	for( i = 1; i < num_layers - 1; i++)
 	{
 		mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 		add(z[i], b[i], z[i], layers_size[i+1]);
@@ -106,17 +107,21 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 		dSigmoid(z[i], sigDz[i], layers_size[i+1]);
 	}
 	// Add the softmax layer
-	mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
-	add(z[i], b[i], z[i], layers_size[i+1]);
-	softmax(z[i], a[i], layers_size[i+1]);
-	softmaxD(z[i], sigDz[i], layers_size[i+1]);
+	// mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
+	// add(z[i], b[i], z[i], layers_size[i+1]);
+	// softmax(z[i], a[i], layers_size[i+1]);
+	// softmaxD(z[i], sigDz[i], layers_size[i+1]);
 }
 
 void backwardPass(int idx)
 {
-	costFnD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
+	costFnLMSD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
 	hprod(delC_a, sigDz[num_layers - 2], delta[num_layers - 2], layers_size[num_layers - 1]);
-	for(int i = num_layers - 3; i > 0; i--)
+	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
+	for( int j = 0; j < layers_size[num_layers - 2]; j++)
+		for( int k = 0; k < layers_size[num_layers - 1]; k++)
+			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][j] : x_train[idx][j])*delta[num_layers - 2][k] ;//+ 2*lambda*w[num_layers - 2][j][k];
+	for(int i = num_layers - 3; i >= 0; i--)
 	{
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
 		mvProd(w[i+1], delta[i+1], temp, layers_size[i+1], layers_size[i+2]);
@@ -124,7 +129,7 @@ void backwardPass(int idx)
 		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		for( int j = 0; j < layers_size[i]; j++)
 			for( int k = 0; k < layers_size[i+1]; k++)
-				delC_w[i][j][k] += ((i > 0) ? a[i-1][k] : x_train[idx][j])*delta[i][j] + 2*lambda*w[i][j][k];
+				delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] ;//+ 2*lambda*w[i][j][k];
 	}
 }
 
@@ -169,7 +174,7 @@ void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 	}
 	for(int i = 0; i < num_layers - 1; i++)
 	{
-		prod(-(alpha/(end_idx - start_idx + 1)), delC_b[i], delC_b[i], layers_size[i+1]);
+		prod(-(alpha/(end_idx - start_idx + 1)), delC_b[i], delC_b[i], layers_size[i+1]);///(end_idx - start_idx + 1)
 		add(b[i], delC_b[i], b[i], layers_size[i+1]);
 	}
 	for(int i = 0; i < num_layers - 1; i++)
@@ -192,41 +197,84 @@ void trainMiniBatch(int start_idx, int end_idx)
 	updateMiniBatch(start_idx, end_idx, 1);
 }
 
-int test(int idx, int dataset_type)
+int testAccuracy(int idx, int dataset_type)
 {
 	forwardPass(idx, dataset_type);
-	if(equals(a[num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
-		return 1;
+	switch(dataset_type)
+	{
+		case 1: if(equals(a[num_layers - 2], y_train[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+		case 2: if(equals(a[num_layers - 2], y_val[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+		case 3: if(equals(a[num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
+					return 1;
+				break;
+	}
+	
 	return 0;
 }
 
-float testBatch(int start_idx, int end_idx, int dataset_type)
+float testEntr(int idx, int dataset_type)
 {
-	int accuracy = 0;
+	forwardPass(idx, dataset_type);
+	switch(dataset_type)
+	{
+		case 1:	
+				return costFnLMS(y_train[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+		case 2: 
+				return costFnLMS(y_val[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+		case 3: 
+				return costFnLMS(y_test[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+	}
+	
+	return 0;
+}
+
+float testBatchAccuracy(int start_idx, int end_idx, int dataset_type)
+{
+	float accuracy = 0;
 	for(int i = start_idx; i <= end_idx; i++)
-		accuracy += test(i, dataset_type);
+		accuracy += testAccuracy(i, dataset_type);
 	accuracy /= (end_idx - start_idx + 1);
 	return accuracy;
+}
+
+float testBatchEntr(int start_idx, int end_idx, int dataset_type)
+{
+	float entr = 0;
+	for(int i = start_idx; i <= end_idx; i++)
+		entr += testEntr(i, dataset_type);
+	entr /= (end_idx - start_idx + 1);
+	return entr;
 }
 
 void train()
 {
 	int numMiniBatches = NUM_TRAIN/miniBatchSize;
 	float accuracy;
+	float entr;
 	initializeGlorot();
+	ofstream fout("entr_train.log");
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		accuracy = testBatch(0, NUM_TEST - 1, 2);
-		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
+		entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
+		cout  << "Epoch: " << epoch << endl;
+		cout << "\t\tTrain entr = " << entr << endl;		
+		fout << entr << endl;
+		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
+		cout  << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
+	fout.close();
 }
 
 int main(int argc, char *argv[])
 {
 	allocate_memory();
-	readData();
+	readData(false);
 	
 	train();
 }

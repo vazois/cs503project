@@ -108,7 +108,8 @@ void readLabelFile(string filename, float** arr)
 	free(temp_arr);
 }
 
-void readData()
+void readData(bool normalize)
+// normalize has default value false
 {
 	float** X_total;
 	float** y_total;
@@ -154,4 +155,18 @@ void readData()
 	}
 	free(X_total);
 	free(y_total);
+
+	// normalize data if needed
+	if(normalize)
+	{
+		for(int j = 0; j < NUM_FEATURES; j++)
+		{
+			for(int i = 0; i < NUM_TRAIN; i++)
+				x_train[i][j] = (x_train[i][j] - 128)/128;
+			for(int i = 0; i < NUM_VAL; i++)
+				x_val[i][j] = (x_val[i][j] - 128)/128;
+			for(int i = 0; i < NUM_TEST; i++)
+				x_test[i][j] = (x_test[i][j] - 128)/128;
+		}
+	}
 }
