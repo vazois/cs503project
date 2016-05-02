@@ -4,6 +4,7 @@
 #define LOAD_TILE 4
 #define ACT_TILE 32
 #define DELTA_TILE 16
+#define TTILE 8
 
 #define DPT 4 //DATA PER THREADS
 #define BSIZE 512
@@ -227,6 +228,56 @@ namespace gnn_kernels{
 			//D_j[row * bsize + col ] *= F.D(Dj);//TODO:
 	}
 
+	template<typename DATA_T, unsigned int TILE>
+	__global__ void tvecpvec(
+			DATA_T *W_j,
+			DATA_T *D_jj,
+			DATA_T *A_j,
+			unsigned int nlayer,
+			unsigned int bsize,
+			unsigned int clayer,
+			double lrate
+			){
+
+		__shared__ DATA_T sDjj[TILE * TILE];
+		__shared__ DATA_T sAj[TILE * TILE];
+
+		DATA_T Wj = 0.0;
+		int rowD = (blockIdx.y * blockDim.y + threadIdx.y);
+		int rowA = (blockIdx.x * blockDim.x + threadIdx.y);
+
+		for(int i = 0;i < (bsize - 1) / TILE + 1;i++){
+			if(rowD < nlayer && (i*TILE + threadIdx.x) < bsize)
+				sDjj[threadIdx.y * TILE + threadIdx.x] = D_jj[rowD * bsize + i*TILE + threadIdx.x];
+			else
+				sDjj[threadIdx.y * TILE + threadIdx.x] = 0.0;
+
+			if(rowA < clayer && (i*TILE + threadIdx.x) < bsize)
+				sAj[threadIdx.y * TILE + threadIdx.x] = A_j[rowA * bsize + i*TILE + threadIdx.x];
+			else
+				sAj[threadIdx.y * TILE + threadIdx.x] = 0.0;
+			__syncthreads();
+
+			//Wj += sDjj[threadIdx.y * TILE + threadIdx.x] * sAj[threadIdx.x * TILE + threadIdx.y];
+			//Wj = sDjj[threadIdx.y * TILE];
+			//Wj = sAj[threadIdx.x * TILE];
+			//Wj = sDjj[threadIdx.y * TILE] * sAj[threadIdx.x * TILE];
+
+			for(int j = 0 ; j < TILE; j++)
+				//Wj += sDjj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
+			//	Wj+=1.0;
+				Wj += sDjj[threadIdx.y * TILE + j] * sAj[threadIdx.x * TILE + j];
+
+			//}
+			__syncthreads();
+		}
+
+		int col = (blockIdx.x * blockDim.x + threadIdx.x);
+		if( rowD < nlayer && col < clayer)
+			W_j[rowD * (clayer + 1) + col] = Wj;
+			//W_j[rowD * (clayer + 1) + col] += (lrate * Wj / bsize);
+	}
+
 	template<typename DATA_T,unsigned int init>
 	__global__ void initVector(DATA_T *M, unsigned int rows, unsigned int cols){
 		int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -337,7 +388,8 @@ namespace gnn{
 			}
 
 			/*
-			 * Back propagation step.
+			 * Output layer Delta computation.
+			 *
 			 */
 			dim3 ogrid = grid_1D(batch[layers-1].clayer * batch[layers-1].bsize, BSIZE);
 			dim3 oblock = block_1D(BSIZE);
@@ -353,14 +405,16 @@ namespace gnn{
 				);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing outputD kernel");
 
+			if(DEBUG_GNN){
 			//printf(">>>>>>Output Delta<<<<<<<\n");
 			//print_grid(ogrid,oblock);
-			/*gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].Y,batch[layers-1].clayer,batch[layers-1].bsize);
+			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].Y,batch[layers-1].clayer,batch[layers-1].bsize);
 			cudaDeviceSynchronize(); printf("------------------>\n");
 			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].A_j,batch[layers-1].clayer,batch[layers-1].bsize);
 			cudaDeviceSynchronize(); printf("------------------>\n");
 			gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[layers-1].D_j,batch[layers-1].clayer,batch[layers-1].bsize);
-			cudaDeviceSynchronize(); printf("------------------>\n");*/
+			cudaDeviceSynchronize(); printf("------------------>\n");
+			}
 
 			/*
 			 * Backpropagation transpose matrix multiplication.
@@ -410,7 +464,6 @@ namespace gnn{
 				dim3 dblock(DELTA_TILE, DELTA_TILE);
 
 				//bD[j] = bD[j] * F(W[j-1] * A(j-1))
-				//
 				if(DEBUG_GNN){
 					printf("D=");
 					gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].D_j,batch[j].clayer,batch[j].bsize);
@@ -446,7 +499,6 @@ namespace gnn{
 				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].D_j,batch[j].clayer,batch[j].bsize);
 				cudaDeviceSynchronize(); //printf("------------------>\n");
 				}
-				break;
 			}
 		}
 
@@ -514,9 +566,9 @@ namespace gnn{
 
 		dim3 rgrid;
 		dim3 rblock = block_1D(256);
-		rgrid = grid_1D(nlayer * clayer,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devA,m,n);
-		rgrid = grid_1D(clayer * bsize,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devB,n,k);
-		rgrid = grid_1D(nlayer * bsize,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devC,m,k);
+		rgrid = grid_1D(nlayer * clayer,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devA,nlayer, clayer);
+		rgrid = grid_1D(clayer * bsize,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devB,clayer, bsize);
+		rgrid = grid_1D(nlayer * bsize,256); gnn_kernels::randomWeights<DATA_T><<<rgrid,rblock>>>(devC,nlayer,bsize);
 
 		if(test == MMUL){
 			dim3 agrid((bsize - 1)/ACT_TILE + 1, (nlayer - 1)/ACT_TILE + 1);
@@ -646,6 +698,48 @@ namespace gnn{
 					bsize
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing hmprod_tmmul kernel");
+		}else if( test == TVECPVEC ){
+			dim3 grid((clayer - 1)/TTILE + 1, (nlayer - 1)/TTILE + 1 );
+			dim3 block(TTILE,TTILE);
+
+			gnn_kernels::tvecpvec<DATA_T,TTILE><<<grid,block>>>(
+					devA,
+					devC,
+					devB,
+					nlayer,
+					bsize,
+					clayer-1,
+					0.0231
+					);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tvecpvec kernel");
+
+			if(debug){
+				print_grid(grid,block);
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devA,nlayer,clayer);
+				cudaDeviceSynchronize();
+				printf("D=");
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devC,nlayer,bsize);
+				cudaDeviceSynchronize();
+				printf("A=");
+				gnn_kernels::printGPU<DATA_T><<<1,1>>>(devB,clayer-1,bsize);
+				cudaDeviceSynchronize();
+				printf("tvecpvec(D,A)\n");
+			}
+
+			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
+			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
+			safeCpyToHost<DATA_T>(hostB,devB,sizeof(DATA_T)*clayer*bsize,"Error copying devB to host");
+			safeCpyToHost<DATA_T>(hostC,devC,sizeof(DATA_T)*nlayer*bsize,"Error copying devC to host");
+
+			for(int x = 0; x < nlayer; x++){
+				for(int y = 0; y < clayer-1; y++){
+					DATA_T A = 0.0;
+					for(int z = 0; z < bsize; z++){
+						//A += hostC[ * nlayer +];
+					}
+					hostA[x * (clayer) + z] = A;
+				}
+			}
 		}
 
 		cudaFree(devA); cudaFree(devB); cudaFree(devC);

@@ -37,12 +37,13 @@ void example_gpu_train(ArgParser ap){
 	s.setBatchSize(4);
 	s.createLayers(layers);
 	//s.print_weights();
-	s.train();
+	//s.train();
 
 	//s.bench_test_kernels(MMUL,1112,912,1231,false);
 	//s.bench_test_kernels(TMMUL,3,4,3, true);
 	//s.bench_test_kernels(TMMUL,618,722,356, false);
 	//s.bench_test_kernels(MHPROD,12,5,4, true);
+	s.bench_test_kernels(TVECPVEC,7,11,5,true);
 }
 
 int main(int argc, char **argv){
