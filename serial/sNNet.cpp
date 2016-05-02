@@ -99,7 +99,7 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	sigmoid(z[0], a[0], layers_size[1]);
 	dSigmoid(z[0], sigDz[0], layers_size[1]);
 	int i;
-	for( i = 1; i < num_layers - 2; i++)
+	for( i = 1; i < num_layers - 1; i++)
 	{
 		mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 		add(z[i], b[i], z[i], layers_size[i+1]);
@@ -107,15 +107,15 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 		dSigmoid(z[i], sigDz[i], layers_size[i+1]);
 	}
 	// Add the softmax layer
-	mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
-	add(z[i], b[i], z[i], layers_size[i+1]);
-	softmax(z[i], a[i], layers_size[i+1]);
-	softmaxD(z[i], sigDz[i], layers_size[i+1]);
+	// mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
+	// add(z[i], b[i], z[i], layers_size[i+1]);
+	// softmax(z[i], a[i], layers_size[i+1]);
+	// softmaxD(z[i], sigDz[i], layers_size[i+1]);
 }
 
 void backwardPass(int idx)
 {
-	costFnD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
+	costFnLMSD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
 	hprod(delC_a, sigDz[num_layers - 2], delta[num_layers - 2], layers_size[num_layers - 1]);
 	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
 	for( int j = 0; j < layers_size[num_layers - 2]; j++)
@@ -216,17 +216,17 @@ int testAccuracy(int idx, int dataset_type)
 	return 0;
 }
 
-int testEntr(int idx, int dataset_type)
+float testEntr(int idx, int dataset_type)
 {
 	forwardPass(idx, dataset_type);
 	switch(dataset_type)
 	{
 		case 1:	
-				return costFn(y_train[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+				return costFnLMS(y_train[idx], a[num_layers - 2], layers_size[num_layers - 1]);
 		case 2: 
-				return costFn(y_val[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+				return costFnLMS(y_val[idx], a[num_layers - 2], layers_size[num_layers - 1]);
 		case 3: 
-				return costFn(y_test[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+				return costFnLMS(y_test[idx], a[num_layers - 2], layers_size[num_layers - 1]);
 	}
 	
 	return 0;
