@@ -120,7 +120,7 @@ void backwardPass(int idx)
 	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
 	for( int j = 0; j < layers_size[num_layers - 2]; j++)
 		for( int k = 0; k < layers_size[num_layers - 1]; k++)
-			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][j] : x_train[idx][j])*delta[num_layers - 2][k] + 2*lambda*w[num_layers - 2][j][k];
+			delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][j] : x_train[idx][j])*delta[num_layers - 2][k] ;//+ 2*lambda*w[num_layers - 2][j][k];
 	for(int i = num_layers - 3; i >= 0; i--)
 	{
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
@@ -129,7 +129,7 @@ void backwardPass(int idx)
 		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		for( int j = 0; j < layers_size[i]; j++)
 			for( int k = 0; k < layers_size[i+1]; k++)
-				delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] + 2*lambda*w[i][j][k];
+				delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] ;//+ 2*lambda*w[i][j][k];
 	}
 }
 
@@ -197,7 +197,7 @@ void trainMiniBatch(int start_idx, int end_idx)
 	updateMiniBatch(start_idx, end_idx, 1);
 }
 
-int test(int idx, int dataset_type)
+int testAccuracy(int idx, int dataset_type)
 {
 	forwardPass(idx, dataset_type);
 	switch(dataset_type)
@@ -216,13 +216,38 @@ int test(int idx, int dataset_type)
 	return 0;
 }
 
-float testBatch(int start_idx, int end_idx, int dataset_type)
+int testEntr(int idx, int dataset_type)
+{
+	forwardPass(idx, dataset_type);
+	switch(dataset_type)
+	{
+		case 1:	
+				return costFn(y_train[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+		case 2: 
+				return costFn(y_val[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+		case 3: 
+				return costFn(y_test[idx], a[num_layers - 2], layers_size[num_layers - 1]);
+	}
+	
+	return 0;
+}
+
+float testBatchAccuracy(int start_idx, int end_idx, int dataset_type)
 {
 	float accuracy = 0;
 	for(int i = start_idx; i <= end_idx; i++)
-		accuracy += test(i, dataset_type);
+		accuracy += testAccuracy(i, dataset_type);
 	accuracy /= (end_idx - start_idx + 1);
 	return accuracy;
+}
+
+float testBatchEntr(int start_idx, int end_idx, int dataset_type)
+{
+	float entr = 0;
+	for(int i = start_idx; i <= end_idx; i++)
+		entr += testEntr(i, dataset_type);
+	entr /= (end_idx - start_idx + 1);
+	return entr;
 }
 
 void train()
@@ -230,19 +255,25 @@ void train()
 	int numMiniBatches = NUM_TRAIN/miniBatchSize;
 	float accuracy;
 	initializeGlorot();
+	ofstream fout("entr_train.log");
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		for(int i = 0; i < numMiniBatches; i++)
+		{
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		accuracy = testBatch(0, NUM_VAL - 1, 2);
+			fout << testBatchEntr(0, NUM_TRAIN - 1, 1) << endl;
+		}
+		
+		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
 		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
 	}
+	fout.close();
 }
 
 int main(int argc, char *argv[])
 {
 	allocate_memory();
-	readData(false);
+	readData(true);
 	
 	train();
 }

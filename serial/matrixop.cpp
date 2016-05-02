@@ -1,5 +1,7 @@
 #include <cmath>
 #include "matrixop.h"
+#define EPSILON 1e-10
+#define INF 1e10
 
 void prod(float *x, float s, float *y, int n)
 {
@@ -92,27 +94,19 @@ void softmaxD(float *x, float *y, int n)
 	}
 }
 
-float costFn(float *y_train, float *y_pred, float ***w, float lambda, int m, int n, int l, int n_out)
+float costFn(float *y_train, float *y_pred, int n_out)
 {
 	float cost = 0;
 	for(int i = 0; i < n_out; i++)
 		cost -= (y_train[i] * log2(y_pred[i]));
 	
-	float cost_reg = 0;
-	for(int i = 0; i < m; i++)
-		for(int j = 0; j < n; j++)
-			for(int k = 0; k < l; k++)
-				cost_reg += (w[i][j][k]*w[i][j][k]);
-
-	cost_reg *= lambda;
-	cost += cost_reg;
 	return cost;
 }
 
 void costFnD(float *y_train, float *y_pred, float *delC_a, int n)
 {
-	for(int i = 0; i < n; i++)
-		delC_a[i] = -y_train[i]/y_pred[i];
+	for(int i = 0; i < n; i++)		
+		delC_a[i] = (y_pred[i] > EPSILON) ? -y_train[i]/y_pred[i] : ((y_train[i] < EPSILON) ? 0 : -INF);
 }
 
 bool equals(float* pred, float* label, int n)
