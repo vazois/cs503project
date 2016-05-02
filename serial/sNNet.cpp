@@ -254,18 +254,19 @@ void train()
 {
 	int numMiniBatches = NUM_TRAIN/miniBatchSize;
 	float accuracy;
+	float entr;
 	initializeGlorot();
 	ofstream fout("entr_train.log");
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		for(int i = 0; i < numMiniBatches; i++)
-		{
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-			fout << testBatchEntr(0, NUM_TRAIN - 1, 1) << endl;
-		}
-		
+		entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
+		cout  << "Epoch: " << epoch << endl;
+		cout << "\t\tTrain entr = " << entr << endl;		
+		fout << entr << endl;
 		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
-		cout  << "Epoch: " << epoch << ", Validation accuracy = " << accuracy*100 << "%" << endl;
+		cout  << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
 	fout.close();
 }
@@ -273,7 +274,7 @@ void train()
 int main(int argc, char *argv[])
 {
 	allocate_memory();
-	readData(true);
+	readData(false);
 	
 	train();
 }
