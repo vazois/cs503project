@@ -94,7 +94,7 @@ void softmaxD(float *x, float *y, int n)
 	}
 }
 
-float costFn(float *y_train, float *y_pred, int n_out)
+float costFnXent(float *y_train, float *y_pred, int n_out)
 {
 	float cost = 0;
 	for(int i = 0; i < n_out; i++)
@@ -103,10 +103,25 @@ float costFn(float *y_train, float *y_pred, int n_out)
 	return cost;
 }
 
-void costFnD(float *y_train, float *y_pred, float *delC_a, int n)
+void costFnXentD(float *y_train, float *y_pred, float *delC_a, int n)
 {
 	for(int i = 0; i < n; i++)		
 		delC_a[i] = (y_pred[i] > EPSILON) ? -y_train[i]/y_pred[i] : ((y_train[i] < EPSILON) ? 0 : -INF);
+}
+
+float costFnLMS(float *y_train, float *y_pred, int n_out)
+{
+	float cost = 0;
+	for(int i = 0; i < n_out; i++)
+		cost += (y_train[i] - y_pred[i])*(y_train[i] - y_pred[i]);
+	
+	return cost/2;
+}
+
+void costFnLMSD(float *y_train, float *y_pred, float *delC_a, int n)
+{
+	for(int i = 0; i < n; i++)		
+		delC_a[i] = (y_pred[i] - y_train[i]);
 }
 
 bool equals(float* pred, float* label, int n)

@@ -21,9 +21,13 @@ void softmax(float *x, float *y, int n);
 
 void softmaxD(float *x, float *y, int n);
 
-float costFn(float *y_train, float *y_pred, int n_out);
+float costFnXent(float *y_train, float *y_pred, int n_out);
 
-void costFnD(float *y_train, float *y_pred, float *delC_a, int n);
+void costFnXentD(float *y_train, float *y_pred, float *delC_a, int n);
+
+float costFnLMS(float *y_train, float *y_pred, int n_out);
+
+void costFnLMSD(float *y_train, float *y_pred, float *delC_a, int n);
 
 bool equals(float* pred, float* label, int n);
 
