@@ -23,7 +23,7 @@ namespace gnn_actf{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return F(x) * F(1-x);
+			return F(x) * (1 - F(x));
 		}
 
 		template<typename T>
@@ -144,6 +144,7 @@ namespace gnn{
 
 			void setBatchSize(unsigned int bz){ this->bsize = bz; }
 			void setTransposeExamples(bool transpose){ this->transpose = transpose; }
+			void setLearningRate(double lrate){ this->lrate = lrate; }
 
 			/*
 			 * Testing methods
@@ -158,7 +159,9 @@ namespace gnn{
 
 			unsigned int layers = 0;
 			unsigned int bsize = 0;//default value.
+			double lrate =0.314;
 			bool transpose = true;
+
 			arr2D dimEx;
 			gnn_data::LayerBatch<DATA_T> *batch = NULL;
 			gnn_data::Layer<DATA_T> *network = NULL;
