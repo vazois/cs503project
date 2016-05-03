@@ -27,16 +27,16 @@ void example_gpu_train(ArgParser ap){
 	s.loadExamplesFromFile(ap.getString(FIARG));
 	std::vector<int> layers;
 
-	layers.push_back(4); //INPUT
+	layers.push_back(8); //INPUT
 	layers.push_back(6); //HIDDEN 1
 	layers.push_back(4); // HIDDEN 2
 	layers.push_back(8); //HIDDEN 3
 	layers.push_back(7); //HIDDEN 4
 	layers.push_back(4); //OUTPUT
 
-	s.setBatchSize(4);
+	s.setBatchSize(6);
 	s.createLayers(layers);
-	//s.print_weights();
+	s.useTranspose(true);
 	s.train();
 
 	//s.bench_test_kernels(MMUL,1112,912,1231,false);

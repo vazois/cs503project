@@ -1,9 +1,6 @@
 #include "GNNConfig.h"
 #include "../common/Time.h"
 
-//#define LOAD_TILE 4
-//#define ACT_TILE 32
-//#define DELTA_TILE 16
 #define TTILE 8
 
 #define DPT 4 //DATA PER THREADS
@@ -53,6 +50,26 @@ namespace gnn_kernels{
 	 * 		Transpose version assumes that the training examples matrix is stored
 	 * 		in a row-wise manner.
 	 */
+
+	template<typename DATA_T, unsigned int TILE>
+	__global__ void loadT(
+			DATA_T *A_j, DATA_T *tEx,
+			unsigned int clayer, unsigned int bsize,
+			unsigned int rows, unsigned int cols, unsigned int offset){
+		__shared__ DATA_T stEx[TILE * TILE];
+		int row = ( blockIdx.y * blockDim.y + threadIdx.y );
+		int col = ( blockIdx.x * blockDim.x + threadIdx.x );
+
+		if((offset + row) < rows && col < cols  && row < rows && col < clayer){
+			stEx[threadIdx.y * TILE + threadIdx.x] = tEx[(offset + row) * cols + col];
+		}
+		__syncthreads();
+
+		if(col < bsize && row < clayer ){
+			A_j[row * bsize + col] = stEx[threadIdx.x * TILE + threadIdx.y];
+		}
+	}
+
 	template<typename DATA_T,unsigned int TILE>
 	__global__ void loadBatchT(DATA_T *A_j, DATA_T *tEx,
 			unsigned int clayer, unsigned int bsize, unsigned int offset){
@@ -70,13 +87,13 @@ namespace gnn_kernels{
 
 	template<typename DATA_T>
 	__global__ void loadBatch(DATA_T *A_j, DATA_T *tEx,
-			unsigned int clayer, unsigned int bsize, unsigned int offset){
+			unsigned int rows, unsigned int cols, unsigned int bsize, unsigned int offset){
 		int i = blockIdx.x * blockDim.x + threadIdx.x;
-		int step = gridDim.x * blockDim.x;
 
-		while (i < clayer * bsize){
-			A_j[i] = tEx[offset + i];
-			i+=step;
+		if( i < cols && i < bsize){
+			for(int k = 0;k<rows;k++){
+				A_j[i + k * bsize ] = tEx[offset + i + k * cols];
+			}
 		}
 	}
 
@@ -329,28 +346,33 @@ namespace gnn{
 	void GNeuralNetwork<DATA_T,ACT_F>::train(){
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(bsize == 0) vz::error("Batch size not set. Use setBatchSize first!");
-		unsigned int nbatch = dimEx.second / this->bsize; //std::cout<< "Batch num: " << nbatch << std::endl;
+		unsigned int nbatch = this->transpose ? dimEx.first / this->bsize : dimEx.second / this->bsize;
 		createLayerBatch();
 
+		if(DEBUG_GNN) std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		if(DEBUG_GNN) std::cout<< "nbatch: " << nbatch << std::endl;
 		for(int i = 0;i < 1;i++){
 			gnn_data::LayerBatch<DATA_T> flayer = batch[0];
-			unsigned int bRow = i * this->bsize * flayer.clayer;//current batch offset
-			dim3 lgrid((flayer.clayer-1)/TTILE + 1,(flayer.bsize - 1)/TTILE+ 1,1);
-			dim3 lblock(TTILE,TTILE,1);
 			/*
 			 * Load current batch of training examples.
 			 */
 			if(this->transpose){
-				gnn_kernels::loadBatchT<DATA_T,TTILE><<<lgrid,lblock>>>
-						(flayer.A_j,examples,flayer.clayer,flayer.bsize,bRow);
+				unsigned int bRow = i * this->bsize;
+				dim3 lgrid((flayer.bsize-1)/TTILE + 1, (flayer.clayer-1)/TTILE + 1);
+				dim3 lblock(TTILE,TTILE);
+				print_grid(lgrid,lblock);
+				gnn_kernels::loadT<DATA_T,TTILE><<<lgrid,lblock>>>(
+						flayer.A_j,examples,
+						flayer.clayer,flayer.bsize,dimEx.first,dimEx.second, bRow);
+				handleDeviceErrors(cudaDeviceSynchronize(),"Error executing loadT batch");
 			}else{
-				gnn_kernels::loadBatch<DATA_T><<<32,256>>>(flayer.A_j,examples,flayer.clayer,flayer.bsize,bRow);
+				dim3 lgrid = grid_1D(bsize,BSIZE);
+				dim3 lblock = block_1D(BSIZE);
+				unsigned int bRow = i * this->bsize;
+				gnn_kernels::loadBatch<DATA_T><<<lgrid,lblock>>>
+				(flayer.A_j,examples,flayer.clayer,dimEx.second,flayer.bsize,bRow);
+				handleDeviceErrors(cudaDeviceSynchronize(),"Error executing load batch");
 			}
-			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing load batch");
-			//std::cout<<flayer.clayer << " x " << flayer.bsize << std::endl;
-			//print_grid(lgrid,lblock);
-			//gnn_kernels::printGPU<DATA_T><<<1,1>>>(flayer.A_j,flayer.clayer,flayer.bsize);
-
 			/*
 			 * Neural network feed forward step.
 			 * 		- W = ( nlayer x (clayer + 1) ), A(i) = ( clayer x bsize ) , A(i+1) = (nlayer x bsize)
@@ -372,9 +394,6 @@ namespace gnn{
 				handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch activation");
 
 				if(DEBUG_GNN){
-				//printf(">>>>>>ACTIVATION<<<<<<< %d\n",j);
-				//printf("A(%d) = W(%d) * A(%d)\n",j+1,j,j);
-				//print_grid(agrid,ablock);
 				printf("Ajj= ");
 				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j+1].A_j,batch[j+1].clayer,batch[j+1].bsize);
 				cudaDeviceSynchronize(); //printf("------------------>\n");
@@ -449,10 +468,6 @@ namespace gnn{
 							);
 					handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
 					if(DEBUG_GNN){
-					//printf("D(%d) = W(%d) * D(%d)\n",j-1,j-1,j);
-					//printf("(%d,%d,%d)\n",j-1,batch[j-1].clayer,batch[j-1].bsize);
-					//printf("(%d,%d,%d)\n",j-1,network[j-1].nlayer,network[j-1].clayer);
-					//print_grid(dgrid,dblock);
 					printf("Djj=");
 					gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j-1].D_j,batch[j-1].clayer,batch[j-1].bsize);
 					cudaDeviceSynchronize(); //printf("------------------>\n");
@@ -466,7 +481,6 @@ namespace gnn{
 					printf("diff1%d = sum(sum(round(Ejj(1:%d,:) - Djj)))\n",j-1,network[j-1].clayer-1);
 					}
 			}
-			//return ;
 
 			/*
 			 * Final step for delta computation.
@@ -501,11 +515,6 @@ namespace gnn{
 				handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
 
 				if(DEBUG_GNN){
-				//printf("D(%d)*= D(W(%d) * A(%d))\n",j,j-1,j-1);
-				//printf("D(%dx%d)*= D(W(%dx%d) * A(%dx%d))\n", batch[j].clayer,
-					//	batch[j].bsize, network[j-1].nlayer,network[j-1].clayer-1,
-						//batch[j-1].clayer, batch[j-1].bsize);
-
 				printf(";Ejj=");
 				gnn_kernels::printGPU<DATA_T><<<1,1>>>(batch[j].D_j,batch[j].clayer,batch[j].bsize);
 				cudaDeviceSynchronize(); //printf("------------------>\n");
