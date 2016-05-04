@@ -1,0 +1,236 @@
+\documentclass{article}
+
+% use Times
+\usepackage{times}
+% For figures
+\usepackage{graphicx} % more modern
+\usepackage{subfigure} 
+
+% For citations
+\usepackage{natbib}
+
+% For algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% For hyperlinks
+\usepackage{hyperref}
+
+% Packages hyperref and algorithmic misbehave sometimes.  We can fix
+% this with the following command.
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+\usepackage[accepted]{icml2015}
+
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Parallel Backpropagation for Multilayer Neural Networks}
+
+\begin{document} 
+
+\twocolumn[
+\icmltitle{Parallel Backpropagation for Multilayer Neural Networks}
+
+% It is OKAY to include author information, even for blind
+% submissions: the style file will automatically remove it for you
+% unless you've provided the [accepted] option to the icml2015
+% package.
+\icmlauthor{Nitin Kamra}{nkamra@usc.edu}
+\icmladdress{Department of Computer Science, University of Southern California}
+\icmlauthor{Palash Goyal}{palashgo@usc.edu}
+\icmladdress{Department of Computer Science, University of Southern California}
+\icmlauthor{Sungyong Seo}{sungyons@usc.edu}
+\icmladdress{Department of Computer Science, University of Southern California}
+\icmlauthor{Vasileios Zois}{vzois@usc.edu}
+\icmladdress{Department of Computer Science, University of Southern California}
+
+% You may provide any keywords that you 
+% find helpful for describing your paper; these are used to populate 
+% the "keywords" metadata in the PDF but will not be shown in the document
+\icmlkeywords{machine learning, neural network, backpropagation, gradient descent, parallel backpropagation}
+
+\vskip 0.3in
+]
+
+\begin{abstract} 
+\end{abstract} 
+
+\input{tex/intro.tex}
+
+\input{tex/probdesc.tex}
+
+\input{tex/backprop.tex}
+
+\input{tex/parbackprop.tex}
+
+\input{tex/gpubackprop.tex}
+
+\input{tex/exp.tex}
+
+\input{tex/results.tex}
+
+\input{tex/future.tex}
+
+\bibliography{bibliography}
+\bibliographystyle{icml2015}
+
+\end{document} 
+
+%\subsection{Figures}
+%
+%\begin{figure}[ht]
+%\vskip 0.2in
+%\begin{center}
+%\centerline{\includegraphics[width=\columnwidth]{}}
+%\caption{Historical locations and number of accepted papers for International
+%  Machine Learning Conferences (ICML 1993 -- ICML 2008) and
+%  International Workshops on Machine Learning (ML 1988 -- ML
+%  1992). At the time this figure was produced, the number of
+%  accepted papers for ICML 2008 was unknown and instead estimated.}
+%\label{icml-historical}
+%\end{center}
+%\vskip -0.2in
+%\end{figure} 
+%
+%\subsection{Algorithms}
+%
+%If you are using \LaTeX, please use the ``algorithm'' and ``algorithmic'' 
+%environments to format pseudocode. These require 
+%the corresponding stylefiles, algorithm.sty and 
+%algorithmic.sty, which are supplied with this package. 
+%Algorithm~\ref{alg:example} shows an example. 
+%
+%\begin{algorithm}[tb]
+%   \caption{Bubble Sort}
+%   \label{alg:example}
+%\begin{algorithmic}
+%   \STATE {\bfseries Input:} data $x_i$, size $m$
+%   \REPEAT
+%   \STATE Initialize $noChange = true$.
+%   \FOR{$i=1$ {\bfseries to} $m-1$}
+%   \IF{$x_i > x_{i+1}$} 
+%   \STATE Swap $x_i$ and $x_{i+1}$
+%   \STATE $noChange = false$
+%   \ENDIF
+%   \ENDFOR
+%   \UNTIL{$noChange$ is $true$}
+%\end{algorithmic}
+%\end{algorithm}
+% 
+%\subsection{Tables} 
+% 
+%You may also want to include tables that summarize material. Like 
+%figures, these should be centered, legible, and numbered consecutively. 
+%However, place the title {\it above\/} the table with at least 
+%0.1~inches of space before the title and the same after it, as in 
+%Table~\ref{sample-table}. The table title should be set in 9~point 
+%type and centered unless it runs two or more lines, in which case it
+%should be flush left.
+%
+%% Note use of \abovespace and \belowspace to get reasonable spacing 
+%% above and below tabular lines. 
+%
+%\begin{table}[t]
+%\caption{Classification accuracies for naive Bayes and flexible 
+%Bayes on various data sets.}
+%\label{sample-table}
+%\vskip 0.15in
+%\begin{center}
+%\begin{small}
+%\begin{sc}
+%\begin{tabular}{lcccr}
+%\hline
+%\abovespace\belowspace
+%Data set & Naive & Flexible & Better? \\
+%\hline
+%\abovespace
+%Breast    & 95.9$\pm$ 0.2& 96.7$\pm$ 0.2& $\surd$ \\
+%Cleveland & 83.3$\pm$ 0.6& 80.0$\pm$ 0.6& $\times$\\
+%Glass2    & 61.9$\pm$ 1.4& 83.8$\pm$ 0.7& $\surd$ \\
+%Credit    & 74.8$\pm$ 0.5& 78.3$\pm$ 0.6&         \\
+%Horse     & 73.3$\pm$ 0.9& 69.7$\pm$ 1.0& $\times$\\
+%Meta      & 67.1$\pm$ 0.6& 76.5$\pm$ 0.5& $\surd$ \\
+%Pima      & 75.1$\pm$ 0.6& 73.9$\pm$ 0.5&         \\
+%\belowspace
+%Vehicle   & 44.9$\pm$ 0.6& 61.5$\pm$ 0.4& $\surd$ \\
+%\hline
+%\end{tabular}
+%\end{sc}
+%\end{small}
+%\end{center}
+%\vskip -0.1in
+%\end{table}
+%
+%Tables contain textual material that can be typeset, as contrasted 
+%with figures, which contain graphical material that must be drawn. 
+%Specify the contents of each row and column in the table's topmost
+%row. Again, you may float tables to a column's top or bottom, and set
+%wide tables across both columns, but place two-column tables at the
+%top or bottom of the page.
+% 
+%\subsection{Citations and References} 
+%
+%Please use APA reference format regardless of your formatter
+%or word processor. If you rely on the \LaTeX\/ bibliographic 
+%facility, use {\tt natbib.sty} and {\tt icml2015.bst} 
+%included in the style-file package to obtain this format.
+%
+%Citations within the text should include the authors' last names and
+%year. If the authors' names are included in the sentence, place only
+%the year in parentheses, for example when referencing Arthur Samuel's
+%pioneering work \yrcite{Samuel59}. Otherwise place the entire
+%reference in parentheses with the authors and year separated by a
+%comma \cite{Samuel59}. List multiple references separated by
+%semicolons \cite{kearns89,Samuel59,mitchell80}. Use the `et~al.'
+%construct only for citations with three or more authors or after
+%listing all authors to a publication in an earlier reference \cite{MachineLearningI}.
+%
+%Authors should cite their own work in the third person
+%in the initial version of their paper submitted for blind review.
+%Please refer to Section~\ref{author info} for detailed instructions on how to
+%cite your own papers.
+%
+%Use an unnumbered first-level section heading for the references, and 
+%use a hanging indent style, with the first line of the reference flush
+%against the left margin and subsequent lines indented by 10 points. 
+%The references at the end of this document give examples for journal
+%articles \cite{Samuel59}, conference publications \cite{langley00}, book chapters \cite{Newell81}, books \cite{DudaHart2nd}, edited volumes \cite{MachineLearningI}, 
+%technical reports \cite{mitchell80}, and dissertations \cite{kearns89}. 
+%
+%Alphabetize references by the surnames of the first authors, with
+%single author entries preceding multiple author entries. Order
+%references for the same authors by year of publication, with the
+%earliest first. Make sure that each reference includes all relevant
+%information (e.g., page numbers).
+%
+%\subsection{Software and Data}
+%
+%We strongly encourage the publication of software and data with the
+%camera-ready version of the paper whenever appropriate.  This can be
+%done by including a URL in the camera-ready copy.  However, do not
+%include URLs that reveal your institution or identity in your
+%submission for review.  Instead, provide an anonymous URL or upload
+%the material as ``Supplementary Material'' into the CMT reviewing
+%system.  Note that reviewers are not required to look a this material
+%when writing their review.
+%
+%
+%% Acknowledgements should only appear in the accepted version. 
+%\section*{Acknowledgments} 
+% 
+%\textbf{Do not} include acknowledgements in the initial version of
+%the paper submitted for blind review.
+%
+%If a paper is accepted, the final camera-ready version can (and
+%probably should) include acknowledgements. In this case, please
+%place such acknowledgements in an unnumbered section at the
+%end of the paper. Typically, this will include thanks to reviewers
+%who gave useful comments, to colleagues who contributed to the ideas, 
+%and to funding agencies and corporate sponsors that provided financial 
+%support.  
+%
+%
+%% In the unusual situation where you want a paper to appear in the
+%% references without citing it in the main text, use \nocite
+%\nocite{langley00}
