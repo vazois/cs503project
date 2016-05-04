@@ -29,7 +29,7 @@ void mvProd(float **M, float *x, float *y, int m, int n)
 
 void mvProdT(float **M, float *x, float *y, int m, int n)
 {
-	int T = 100;
+	int T = 500;
 	float sum = 0;
 	for(int j = 0; j < n; j++)
 		y[j] = 0;
