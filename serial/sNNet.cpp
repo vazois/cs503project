@@ -265,13 +265,13 @@ void train()
 		Timer.reset();
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
+		cout << "\t\t"; Timer.lap("secs");
 		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);	
 		cout << "Epoch: " << epoch << endl;
 		cout << "\t\tTraining cost = " << entr << endl;		
 		fout << entr << endl;
 		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
 		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
-		cout << "\t\t"; Timer.lap("secs");
 	}
 	fout.close();
 }
