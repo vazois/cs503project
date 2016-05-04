@@ -12,6 +12,8 @@
 #include <assert.h>
 #include <vector>
 #include <sstream>
+#include "../common/Time.h"
+#include "../common/Constants.h"
 
 #include "matrixop.h"
 #include "datalib.h"
@@ -24,7 +26,7 @@ float ***w, **b, **delta, **a, **z, **sigDz;
 float *delC_a, ***delC_w, **delC_b;
 
 float lambda = 1e-3;
-float alpha = 1e-2;
+float alpha = 1e-1;
 
 int miniBatchSize = 1000;
 int nEpochs = 50;
@@ -216,7 +218,7 @@ int testAccuracy(int idx, int dataset_type)
 	return 0;
 }
 
-float testEntr(int idx, int dataset_type)
+float testCost(int idx, int dataset_type)
 {
 	forwardPass(idx, dataset_type);
 	switch(dataset_type)
@@ -241,32 +243,35 @@ float testBatchAccuracy(int start_idx, int end_idx, int dataset_type)
 	return accuracy;
 }
 
-float testBatchEntr(int start_idx, int end_idx, int dataset_type)
+float testBatchCost(int start_idx, int end_idx, int dataset_type)
 {
 	float entr = 0;
 	for(int i = start_idx; i <= end_idx; i++)
-		entr += testEntr(i, dataset_type);
+		entr += testCost(i, dataset_type);
 	entr /= (end_idx - start_idx + 1);
 	return entr;
 }
 
 void train()
 {
+	Time<secs> Timer;
 	int numMiniBatches = NUM_TRAIN/miniBatchSize;
 	float accuracy;
 	float entr;
 	initializeGlorot();
-	ofstream fout("entr_train.log");
+	ofstream fout("Cost_train.log");
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
+		Timer.reset();
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
-		cout  << "Epoch: " << epoch << endl;
-		cout << "\t\tTrain entr = " << entr << endl;		
+		cout << "Epoch: " << epoch << endl;
+		cout << "\t\t"; Timer.lap("secs");
+		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);			
+		cout << "\t\tTraining cost = " << entr << endl;		
 		fout << entr << endl;
 		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
-		cout  << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
+		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
 	fout.close();
 }
@@ -277,5 +282,18 @@ int main(int argc, char *argv[])
 	readData(false);
 	
 	train();
+	// float** M = (float**) malloc(3 * sizeof(float*));
+	// for(int i = 0; i < 3; ++i)
+	// {
+	// 	M[i] = (float*) malloc(2 * sizeof(float));
+	// 	for(int j = 0; j < 2; j++)
+	// 		M[i][j] = i+j;
+	// }
+	// float* x = (float*) malloc(3 * sizeof(float));
+	// for(int i = 0; i < 3; i++)
+	// 	x[i] = 2-i;
+	// float* y = (float*) malloc(2 * sizeof(float));
+	// mvProdT(M, x, y, 3, 2);
+	// cout << y[0] << " " << y[1] << endl;
 }
 

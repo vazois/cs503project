@@ -29,13 +29,20 @@ void mvProd(float **M, float *x, float *y, int m, int n)
 
 void mvProdT(float **M, float *x, float *y, int m, int n)
 {
+	int T = 500;
 	float sum = 0;
-	for(int i = 0; i < n; i++)
+	for(int j = 0; j < n; j++)
+		y[j] = 0;
+	for(int i = 0; i < m; i += T)
 	{
-		sum = 0;		
-		for(int j = 0; j < m; j++)
-			sum += M[j][i] * x[j];			
-		y[i] = sum;
+		int i_max = (i + T > m) ? m : (i + T);
+		for(int j = 0; j < n; j++)
+		{
+			sum = 0;
+			for(int ii = i; ii < i_max; ii++)
+				sum += M[ii][j] * x[ii];
+			y[j] += sum;
+		}		
 	}
 }
 
