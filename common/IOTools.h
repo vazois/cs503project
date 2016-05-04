@@ -155,16 +155,16 @@ arr2D IOTools<DATA_T>::dataDim(std::string file){
 	while (!feof(fp)){
 		unsigned int read = fread(buffer, 1, readBufferSize, fp);
 		char *pch = std::strchr(buffer, '\n');
-		while (pch != NULL){ dim.second++;  pch = std::strchr(pch + 1, '\n'); }
+		while (pch != NULL){ dim.first++;  pch = std::strchr(pch + 1, '\n'); }
 		memset(buffer, '\0', read);
 	}
-	dim.second++;
+	dim.first++;
 	fclose(fp);
 
 	std::ifstream ifs(file, std::ifstream::in);
 	std::string line;
 	std::getline(ifs, line);
-	dim.first = std::count(line.begin(), line.end(), dm) + 1;
+	dim.second = std::count(line.begin(), line.end(), dm) + 1;
 
 	ifs.close();
 	return dim;

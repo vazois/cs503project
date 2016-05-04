@@ -10,7 +10,8 @@ enum UnitTest{
 		MMUL,//MATRIX MULTIPLICATION
 		TMMUL,//TRANSPOSE MATRIX MULTIPLICATION
 		OUTDM,//OUTPUT DELTA COMPUTATION
-		MHPROD//MATRIX HADAMARD PRODUCT
+		MHPROD,//MATRIX HADAMARD PRODUCT
+		TVECPVEC// TRANSPOSE VECTOR PRODUCT VECTOR
 	};
 
 #define ZEROS 0
@@ -22,7 +23,7 @@ namespace gnn_actf{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return F(x) * F(1-x);
+			return F(x) * (1 - F(x));
 		}
 
 		template<typename T>
@@ -142,7 +143,8 @@ namespace gnn{
 			void train();
 
 			void setBatchSize(unsigned int bz){ this->bsize = bz; }
-			void setTransposeExamples(bool transpose){ this->transpose = transpose; }
+			void useTranspose(bool transpose){ this->transpose = transpose; }
+			void setLearningRate(double lrate){ this->lrate = lrate; }
 
 			/*
 			 * Testing methods
@@ -157,7 +159,9 @@ namespace gnn{
 
 			unsigned int layers = 0;
 			unsigned int bsize = 0;//default value.
+			double lrate =0.314;
 			bool transpose = true;
+
 			arr2D dimEx;
 			gnn_data::LayerBatch<DATA_T> *batch = NULL;
 			gnn_data::Layer<DATA_T> *network = NULL;
@@ -169,9 +173,7 @@ namespace gnn{
 	void GNeuralNetwork<DATA_T,ACT_F>::loadExamplesFromFile(std::string file){
 		IOTools<DATA_T> iot;
 		dimEx = iot.dataDim(file);
-		//std::cout<<"("<<dim.first<<","<<dim.second<<")"<<std::endl;
 		iot.freadFile(examples,file,true);
-		//std::cout<< examples[0*dim.first]<<"," << examples[1*dim.first]<<"," << examples[2*dim.first]<<std::endl;
 	}
 
 	template<typename DATA_T, typename ACT_F>
@@ -181,9 +183,7 @@ namespace gnn{
 		network = new gnn_data::Layer<DATA_T>[this->layers-1];
 
 		/*clayer+1 = Weight matrix includes additional column for bias. nlayer x (clayer + 1)*/
-		for(int i = 0;i<this->layers-1;i++){
-			network[i].initLayer(layers[i]+1,layers[i+1]);
-		}
+		for(int i = 0;i<this->layers-1;i++) network[i].initLayer(layers[i]+1,layers[i+1]);
 		randomInit();
 	}
 
@@ -201,12 +201,8 @@ namespace gnn{
 
 		/*(clayer - 1) = Activation does not include bias vector*/
 		batch[0].initLayerBatch(network[0].clayer-1,this->bsize,true);
-		//std::cout<< network[0].clayer-1 <<"<>"<<this->bsize << std::endl;
 		/*nlayer is current layer without bias vector for activation matrix*/
-		for(int i = 0; i < this->layers-1;i++){
-			//std::cout<< network[i].nlayer <<"<>"<< this->bsize << std::endl;
-			batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
-		}
+		for(int i = 0; i < this->layers-1;i++) batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
 		batch[this->layers-1].initOutputBatch();//Initialize Y Matrix
 	}
 }
