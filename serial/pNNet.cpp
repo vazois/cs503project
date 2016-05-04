@@ -32,6 +32,7 @@ float alpha = 1e-1;
 
 int miniBatchSize = 10000;
 int nEpochs = 50;
+float accur[NUM_THREADS];
 
 
 typedef struct my_param
@@ -201,9 +202,9 @@ void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 	{	
 		thread_params *curr_thread_params = (thread_params *)malloc(sizeof(thread_params));
 		(*curr_thread_params).procNo = procNo;
-		(*curr_thread_params).startId = procNo*ex_per_proc;
+		(*curr_thread_params).startId = start_idx + procNo*ex_per_proc;
 		if(procNo != NUM_THREADS - 1)
-			(*curr_thread_params).endId = (procNo + 1)*ex_per_proc - 1;
+			(*curr_thread_params).endId = start_idx + (procNo + 1)*ex_per_proc - 1;
 		else
 			(*curr_thread_params).endId = end_idx;
 		(*curr_thread_params).dataset_type = dataset_type;
@@ -245,18 +246,18 @@ void trainMiniBatch(int start_idx, int end_idx)
 	updateMiniBatch(start_idx, end_idx, 1);
 }
 
-int testAccuracy(int idx, int dataset_type)
+int testAccuracy(int idx, int dataset_type, int threadId)
 {
-	forwardPass(idx, dataset_type, 0);
+	forwardPass(idx, dataset_type, threadId);
 	switch(dataset_type)
 	{
-		case 1: if(equals(a[0][num_layers - 2], y_train[idx], layers_size[num_layers - 1]))
+		case 1: if(equals(a[threadId][num_layers - 2], y_train[idx], layers_size[num_layers - 1]))
 					return 1;
 				break;
-		case 2: if(equals(a[0][num_layers - 2], y_val[idx], layers_size[num_layers - 1]))
+		case 2: if(equals(a[threadId][num_layers - 2], y_val[idx], layers_size[num_layers - 1]))
 					return 1;
 				break;
-		case 3: if(equals(a[0][num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
+		case 3: if(equals(a[threadId][num_layers - 2], y_test[idx], layers_size[num_layers - 1]))
 					return 1;
 				break;
 	}
@@ -280,12 +281,46 @@ float testEntr(int idx, int dataset_type)
 	return 0;
 }
 
+void *testAccuracyPerThread(void *arg)
+{
+	int procNo = (*(thread_params*) arg).procNo;
+	int startId = (*(thread_params*) arg).startId;
+	int endId = (*(thread_params*) arg).endId;
+	int dataset_type = (*(thread_params*) arg).dataset_type;
+	accur[procNo] = 0;
+	for(int i = startId; i <= endId; i++)
+		accur[procNo] += testAccuracy(i, dataset_type, procNo);
+	accur[procNo] /= (endId - startId + 1);	 
+}
+
 float testBatchAccuracy(int start_idx, int end_idx, int dataset_type)
 {
+	pthread_t thd[NUM_THREADS];
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	int ex_per_proc = (end_idx - start_idx + 1)/NUM_THREADS;
+	for(unsigned procNo = 0; procNo < NUM_THREADS; procNo++)
+	{	
+		thread_params *curr_thread_params = (thread_params *)malloc(sizeof(thread_params));
+		(*curr_thread_params).procNo = procNo;
+		(*curr_thread_params).startId = start_idx + procNo*ex_per_proc;
+		if(procNo != NUM_THREADS - 1)
+			(*curr_thread_params).endId = start_idx + (procNo + 1)*ex_per_proc - 1;
+		else
+			(*curr_thread_params).endId = end_idx;
+		(*curr_thread_params).dataset_type = dataset_type;
+		pthread_create(&thd[procNo], &attr, testAccuracyPerThread, (void *)curr_thread_params);
+	}
+	for(unsigned procNo = 0; procNo < NUM_THREADS; procNo++)
+	{
+		pthread_join(thd[procNo],NULL);
+	}
+	
 	float accuracy = 0;
-	for(int i = start_idx; i <= end_idx; i++)
-		accuracy += testAccuracy(i, dataset_type);
-	accuracy /= (end_idx - start_idx + 1);
+	for(int t = 0; t <= NUM_THREADS; t++)
+		accuracy += accur[t];
+	accuracy /= NUM_THREADS;
 	return accuracy;
 }
 
@@ -311,11 +346,12 @@ void train()
 		Timer.reset();
 		for(int i = 0; i < numMiniBatches; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
-		cout << "\t\t"; Timer.lap("secs");
-		entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
 		cout  << "Epoch: " << epoch << endl;
-		cout << "\t\tTrain entr = " << entr << endl;		
-		fout << entr << endl;
+		cout << "\t\t"; Timer.lap("secs");
+		//entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
+		
+	//	cout << "\t\tTrain entr = " << entr << endl;		
+	//	fout << entr << endl;
 		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
 		cout  << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
