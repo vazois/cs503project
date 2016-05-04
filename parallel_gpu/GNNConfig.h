@@ -17,23 +17,45 @@ enum UnitTest{
 #define ZEROS 0
 #define ONES 1
 #define RANDOM 2
+#define DEBUG_GNN false
 
 namespace gnn_actf{
 	struct Sigmoid{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
+		T f(T x){
+			return 1.0/(1.0 + exp(-x));
+		}
+
+		template<typename T>
+		T d(T x){
+			return f(x) * (1.0 - f(x));
+		}
+
+		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return F(x) * (1 - F(x));
+			return F(x) * (1.0 - F(x));
 		}
 
 		template<typename T>
 		__forceinline__ __device__ T F(T x){
-			return 1/(1 + expf(-x));
+			return 1.0/(1.0 + expf(-x));
 		}
 	};
 
 	struct FSigmoid{
 		char TAG[10] = "FSigmoid";
+
+		template<typename T>
+		T f(T x){
+			return x/ (1.0 + fabs(x));
+		}
+
+		template<typename T>
+		T d(T x){
+			return 1.0 / pow(1.0 + fabs(x),2.0);
+		}
+
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
 			return 1.0/powf(1.0 + fabsf(x),2.0);
@@ -47,6 +69,17 @@ namespace gnn_actf{
 
 	struct Arctan{
 		char TAG[10] = "Arctan";
+
+		template<typename T>
+		T d(T x){
+			return powf(1/acosh(x),2.0);
+		}
+
+		template<typename T>
+		T f(T x){
+			return 	tanh(x);
+		}
+
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
 			return powf(1/acoshf(x),2.0);
@@ -152,6 +185,7 @@ namespace gnn{
 			void bench_act();
 			void print_weights();
 			void bench_test_kernels(UnitTest test,unsigned int m, unsigned int n, unsigned int k, bool debug);
+			void classify();
 
 		private:
 			void createLayerBatch();

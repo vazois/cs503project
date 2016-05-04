@@ -75,8 +75,9 @@ void IOTools<DATA_T>::freadFile(DATA_T *& data, std::string file, bool pinned){
 	if(pinned) allocHostMem<DATA_T>(&data,sizeof(DATA_T)* cells(dim),"Error Allocating Pinned Memory in fastReaFile");
 	else data = new DATA_T[cells(dim)];
 
+
 	uint64_t totalbytes = this->fsize(file);
-	char *buffer = new char[totalbytes];
+	char *buffer = new char[totalbytes+1];
 	FILE *fp = fopen(file.c_str(), "r");
 	totalbytes = fread(buffer, 1, totalbytes, fp);
 	buffer[totalbytes] = '\0';
