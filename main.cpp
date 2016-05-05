@@ -21,11 +21,10 @@ void example_gpu_bench_act(){
 }
 
 void example00(ArgParser ap){
-	cudaSetDevice(0);
+	cudaSetDevice(CUDA_DEVICE);
 	gnn_actf::Sigmoid gs;
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 
-	if(!ap.exists(FIARG)) vz::error("Please provide input file!!!");
 	s.loadExamplesFromFile("data/glass.data");
 	std::vector<int> layers;
 
@@ -33,10 +32,10 @@ void example00(ArgParser ap){
 	layers.push_back(27);
 	layers.push_back(7);
 
-	s.setBatchSize(1000);
+	s.setBatchSize(10);
 	s.createLayers(layers);
 	s.useTranspose(true);
-	s.print_weights();
+	//s.print_weights();
 	Time<millis> t;
 	t.start();
 	s.train();
@@ -45,20 +44,19 @@ void example00(ArgParser ap){
 }
 
 void example01(ArgParser ap){
-	cudaSetDevice(0);
+	cudaSetDevice(CUDA_DEVICE);
 	gnn_actf::Sigmoid gs;
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 
 	//if(!ap.exists(FIARG)) vz::error("Please provide input file!!!");
-	s.loadExamplesFromFile("data/letters_train.data");
-	s.loadTestExamplesFromFile("data/letters_test.data");
+	s.loadExamplesFromFile("data/glass.data");
 	std::vector<int> layers;
 
 	layers.push_back(16);
-	layers.push_back(1000);
+	layers.push_back(100);
 	layers.push_back(26);
 
-	s.setBatchSize(500);
+	s.setBatchSize(100);
 	s.createLayers(layers);
 	s.useTranspose(true);
 	s.setLearningRate(0.1);
@@ -66,16 +64,12 @@ void example01(ArgParser ap){
 	Time<millis> t;
 	//s.print_weights();
 	t.start();
-	//for(int i = 0;i<50;i++)
-	s.train();
+	for(int i = 0;i<50;i++) s.train();
 	t.lap("Training Execution Time(ms)");
-	s.printConfig();
-	//s.print_weights();
-	s.classify();
 }
 
 void example02(ArgParser ap){
-	cudaSetDevice(0);
+	cudaSetDevice(CUDA_DEVICE);
 	gnn_actf::Sigmoid gs;
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 
@@ -84,8 +78,9 @@ void example02(ArgParser ap){
 	std::vector<int> layers;
 
 	layers.push_back(16);
-	layers.push_back(1000);
-	layers.push_back(700);
+	layers.push_back(500);
+	//layers.push_back(700);
+	//layers.push_back(700);
 	layers.push_back(26);
 
 	unsigned int b = ap.getUint(BARG);
@@ -93,44 +88,23 @@ void example02(ArgParser ap){
 	s.setBatchSize(b);
 	s.createLayers(layers);
 	s.useTranspose(true);
-	s.setLearningRate(0.2);
+	s.setLearningRate(0.3);
 
 	Time<millis> t;
 	//s.print_weights();
+	unsigned int iterations = 100;
 	t.start();
-	for(int i = 0;i<50;i++) s.train();
-	t.lap("Training Execution Time(ms)");
-	s.printConfig();
+	for(int i = 0;i<iterations;i++) s.train();
+	s.printConfig(t.lap("Training Execution Time(ms)")/iterations);
 	//s.print_weights();
 	s.classify();
 }
 
 void example03(ArgParser ap){
 	gnn_actf::Sigmoid gs;
-	gnn::GNeuralNetwork<double,gnn_actf::Sigmoid> s(gs);
-	s.loadExamplesFromFile("data/letters_train.data");
-	std::vector<int> layers;
-
-	/*layers.push_back(16); //INPUT
-	layers.push_back(1024); //HIDDEN 1
-	layers.push_back(1024); // HIDDEN 2
-	layers.push_back(1024); //HIDDEN 3
-	layers.push_back(1024); //HIDDEN 4
-	layers.push_back(1024); //HIDDEN 5
-	layers.push_back(1024); //HIDDEN 6
-	layers.push_back(1024); //HIDDEN 7
-	layers.push_back(1024); //HIDDEN 8
-	layers.push_back(1024); //HIDDEN 9
-	layers.push_back(1024); //HIDDEN 10
-	layers.push_back(26); //OUTPUT
-
-	s.setBatchSize(5000);
-	s.createLayers(layers);
-	s.useTranspose(true);
-	Time<millis> t;
-	t.start();
-	s.train();
-	t.lap("Training Execution Time");*/
+	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
+	gnn_actf::FSigmoid fgs;
+	//gnn::GNeuralNetwork<double,gnn_actf::FSigmoid> s(fgs);
 
 	//784 100 10
 	//
@@ -145,11 +119,15 @@ void example03(ArgParser ap){
 	//s.bench_test_kernels(TMMUL,3,5,4,true);
 	//s.bench_test_kernels(MHPROD,3,5,4, true);
 
-	for(int i =0 ;i<10;i++){
-		s.bench_test_kernels(MMUL,1112,912,1231,false);
-		s.bench_test_kernels(TMMUL,1112,912,1231,false);
-		s.bench_test_kernels(TVECPVEC,1112,912,100,false);
+	Time<millis> t;
+	t.start();
+	for(int i =0 ;i<1000;i++){
+		s.bench_test_kernels(MMUL,1024,1024,1024,false);
+		s.bench_test_kernels(TMMUL,1024,1024,1024,false);
+		s.bench_test_kernels(MHPROD,1024,1024,1024, false);
+		s.bench_test_kernels(TVECPVEC,1024,1024,1024,false);
 	}
+	t.lap();
 }
 
 int main(int argc, char **argv){
@@ -157,7 +135,7 @@ int main(int argc, char **argv){
 	ap.parseArgs(argc,argv);
 	//example00(ap);
 	//example01(ap);
-	//example02(ap);
-	example03(ap);
+	example02(ap);
+	//example03(ap);
 
 }

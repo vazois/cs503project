@@ -6,6 +6,8 @@
 #include "../common/CudaHelper.h"
 #include "../common/IOTools.h"
 
+#define CUDA_DEVICE 2
+
 enum UnitTest{
 		MMUL,//MATRIX MULTIPLICATION
 		TMMUL,//TRANSPOSE MATRIX MULTIPLICATION
@@ -168,7 +170,7 @@ namespace gnn{
 		public:
 			GNeuralNetwork(ACT_F F){
 				this->F = F;
-				cudaSetDevice(0);
+				cudaSetDevice(CUDA_DEVICE);
 			};
 
 			~GNeuralNetwork(){
@@ -185,20 +187,25 @@ namespace gnn{
 
 			void setBatchSize(unsigned int bz){ this->bsize = bz; }
 			void useTranspose(bool transpose){ this->transpose = transpose; }
-			void setLearningRate(double lrate){ this->lrate = lrate; }
+			void setLearningRate(float lrate){ this->lrate = lrate; }
 
-			void printConfig(){
+			void printConfig(double tt){
 				unsigned int weights = 0;
 				unsigned batches = 0;
 				unsigned int mem = 0;
-				unsigned int flops = 0;
+				unsigned int flops = 0,rflops=0;
 				for(int i = 0;i < layers-1 ;i++){
 					weights+= network[i].nlayer * network[i].clayer;
 					batches +=  network[i].clayer * bsize;
+
+					rflops+= network[i].nlayer * 2 *network[i].clayer // A(i+1) = W(i) * A(i)
+							+ network[i].nlayer * 2 *network[i].clayer//D(i) = W(i)^T * D(i+1)
+							+ network[i].nlayer * 2 *network[i].clayer + network[i].nlayer //// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
+							+ network[i].nlayer *network[i].clayer; //W(i) = W(i) + Sum(D(i+1) * A(i))
 					flops += network[i].nlayer * 2 *network[i].clayer * bsize // A(i+1) = W(i) * A(i)
 							+ network[i].nlayer * 2 *network[i].clayer * bsize//D(i) = W(i)^T * D(i+1)
 							+ network[i].clayer * bsize + network[i].nlayer * 2 *network[i].clayer * bsize// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
-							+ bsize * network[i].clayer * network[i].nlayer + network[i].clayer* network[i].nlayer;//W(i) = W(i) + Sum(D(i+1) * A(i))
+							+ bsize * network[i].clayer * network[i].nlayer + network[i].clayer* network[i].nlayer;
 				}
 				mem +=  weights *  4 + batches * 4;
 				std::cout<< "Layers: " << layers-1 << std::endl;
@@ -206,7 +213,10 @@ namespace gnn{
 				std::cout<< "Mem Requirements estimate (bytes): " << mem << std::endl;
 				std::cout<< "Mem Requirements (bytes): " << this->mem << std::endl;
 				std::cout << "Batch size: " << bsize <<std::endl;
-				std::cout << "FLOPS: " << flops << std::endl;
+				//std::cout << "FLOPS: " << flops << std::endl;
+				std::cout << "Elapsed time (secs)" << tt/1000 <<std::endl;
+				std::cout << "Estimated FLOP: " << rflops * dimEx.first << std::endl;
+				std::cout << "Achieved GFLOPS: " << ((double)(rflops * dimEx.first)/(tt/1000))/(1024*1024*1204) << std::endl;
 			}
 
 			/*
@@ -223,7 +233,7 @@ namespace gnn{
 
 			unsigned int layers = 0;
 			unsigned int bsize = 0;//default value.
-			double lrate =0.314;
+			float lrate =0.314;
 			bool transpose = true;
 			unsigned int mem = 0;
 
@@ -238,6 +248,7 @@ namespace gnn{
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::loadExamplesFromFile(std::string file){
+		cudaSetDevice(CUDA_DEVICE);
 		IOTools<DATA_T> iot;
 		dimEx = iot.dataDim(file);
 		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
@@ -246,6 +257,7 @@ namespace gnn{
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::loadTestExamplesFromFile(std::string file){
+		cudaSetDevice(CUDA_DEVICE);
 		IOTools<DATA_T> iot;
 		dimT = iot.dataDim(file);
 		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
@@ -254,6 +266,7 @@ namespace gnn{
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::createLayers(std::vector<int> layers){
+		cudaSetDevice(CUDA_DEVICE);
 		if(layers.size() <= 0 ) vz::error("Network architecture not valid!");
 		this->layers = layers.size();
 		network = new gnn_data::Layer<DATA_T>[this->layers-1];
@@ -270,6 +283,7 @@ namespace gnn{
 	 */
 	template<typename DATA_T, typename ACT_F>
 	unsigned int GNeuralNetwork<DATA_T,ACT_F>::createLayerBatch(){
+		cudaSetDevice(CUDA_DEVICE);
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(hExamples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
 		if(bsize > dimEx.first) bsize = dimEx.first;

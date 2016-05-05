@@ -1,4 +1,3 @@
-<<<<Batch number (0)>>>>
-<<<<Batch number (1)>>>>
-<<<<Batch number (2)>>>>
-<<<<Batch number (3)>>>>
+Elapsed Time ( GPU mmul elapsed time ): 18.2262
+Elapsed Time ( GPU tmmul elapsed time ): 18.6128
+Elapsed Time ( tvecpvec kernel elapsed time ): 0.035453

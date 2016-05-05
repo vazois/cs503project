@@ -15,8 +15,8 @@ public:
 	~Time(){};
 	void start();
 	void reset();
-	void lap(std::string);
-	void lap();
+	double lap(std::string);
+	double lap();
 private:
 	std::chrono::high_resolution_clock::time_point tp1;
 	std::chrono::high_resolution_clock::time_point tp2;
@@ -33,17 +33,20 @@ void Time<M>::reset(){
 }
 
 template<class M>
-void Time<M>::lap(){
-	this->lap("");
+double Time<M>::lap(){
+	return this->lap("");
 }
 
 template<class M>
-void Time<M>::lap(std::string comment){
+double Time<M>::lap(std::string comment){
 	this->tp2 = std::chrono::high_resolution_clock::now();
 	M time_span = std::chrono::duration_cast<M>(this->tp2 - this->tp1);
 
-	std::cout << "Elapsed Time ( " << comment << " ): " << time_span.count() << std::endl;
+	double tt= time_span.count();
+	std::cout << "Elapsed Time ( " << comment << " ): " << tt << std::endl;
 	this->tp1 = std::chrono::high_resolution_clock::now();
+
+	return tt;
 }
 
 #ifdef _WIN32
