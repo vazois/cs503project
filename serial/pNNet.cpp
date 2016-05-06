@@ -30,8 +30,8 @@ float **delC_a, ****delC_w, ***delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 64;
-int nEpochs = 50;
+int miniBatchSize = 128;
+int nEpochs = 5;
 float accur[NUM_THREADS];
 
 
@@ -174,8 +174,6 @@ void initDeriv(int threadId)
 				delC_w[threadId][i][j][k] = 0;
 }
 
-
-
 void *miniBatchForBack(void *arg)
 {
 	int procNo = (*(thread_params*) arg).procNo;
@@ -189,7 +187,6 @@ void *miniBatchForBack(void *arg)
 		backwardPass(i, procNo);
 	}
 }
-
 
 void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 {
@@ -239,7 +236,6 @@ void updateMiniBatch(int start_idx, int end_idx, int dataset_type)
 		}
 	}
 }
-
 
 void trainMiniBatch(int start_idx, int end_idx)
 {
@@ -340,14 +336,22 @@ void train()
 	float accuracy;
 	float entr;
 	initializeGlorot();
-	ofstream fout("entr_train.log");
+//	ofstream fout("entr_train.log");
+	double timePerEpoch = 0.0;
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		Timer.reset();
-		for(int i = 0; i < numMiniBatches; i++)
+		int i;
+		for(i = 0; i < numMiniBatches - 1; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
+		trainMiniBatch(i*miniBatchSize, NUM_TRAIN - 1);
 		cout  << "Epoch: " << epoch << endl;
-		cout << "\t\t"; Timer.lap("secs");
+		
+		if(epoch > 0)
+		{
+			cout << "\t\t"; 
+			timePerEpoch += Timer.lap("secs");
+		}
 		//entr = 	testBatchEntr(0, NUM_TRAIN - 1, 1);	
 		
 	//	cout << "\t\tTrain entr = " << entr << endl;		
@@ -355,7 +359,9 @@ void train()
 		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
 		cout  << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
-	fout.close();
+	timePerEpoch /= (nEpochs - 1);
+	cout << "Average time per epoch = " << timePerEpoch << endl;
+//	fout.close();
 }
 
 int main(int argc, char *argv[])
