@@ -28,7 +28,7 @@ float *delC_a, ***delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 1000;
+int miniBatchSize = 10;
 int nEpochs = 50;
 
 void allocate_memory()
