@@ -30,7 +30,7 @@ float **delC_a, ****delC_w, ***delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 1024;
+int miniBatchSize = 64;
 int nEpochs = 50;
 float accur[NUM_THREADS];
 
