@@ -6,6 +6,8 @@
 #include "../common/CudaHelper.h"
 #include "../common/IOTools.h"
 
+#define CUDA_DEVICE 2
+
 enum UnitTest{
 		MMUL,//MATRIX MULTIPLICATION
 		TMMUL,//TRANSPOSE MATRIX MULTIPLICATION
@@ -17,23 +19,46 @@ enum UnitTest{
 #define ZEROS 0
 #define ONES 1
 #define RANDOM 2
+#define DEBUG_GNN false
+#define DEBUG_T false
 
 namespace gnn_actf{
 	struct Sigmoid{
 		char TAG[10] = "Sigmoid";
 		template<typename T>
+		T f(T x){
+			return 1.0/(1.0 + exp(-x));
+		}
+
+		template<typename T>
+		T d(T x){
+			return f(x) * (1.0 - f(x));
+		}
+
+		template<typename T>
 		__forceinline__ __device__ T D(T x){
-			return F(x) * (1 - F(x));
+			return F(x) * (1.0 - F(x));
 		}
 
 		template<typename T>
 		__forceinline__ __device__ T F(T x){
-			return 1/(1 + expf(-x));
+			return 1.0/(1.0 + expf(-x));
 		}
 	};
 
 	struct FSigmoid{
 		char TAG[10] = "FSigmoid";
+
+		template<typename T>
+		T f(T x){
+			return x/ (1.0 + fabs(x));
+		}
+
+		template<typename T>
+		T d(T x){
+			return 1.0 / pow(1.0 + fabs(x),2.0);
+		}
+
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
 			return 1.0/powf(1.0 + fabsf(x),2.0);
@@ -47,6 +72,17 @@ namespace gnn_actf{
 
 	struct Arctan{
 		char TAG[10] = "Arctan";
+
+		template<typename T>
+		T d(T x){
+			return powf(1/acosh(x),2.0);
+		}
+
+		template<typename T>
+		T f(T x){
+			return 	tanh(x);
+		}
+
 		template<typename T>
 		__forceinline__ __device__ T D(T x){
 			return powf(1/acoshf(x),2.0);
@@ -80,15 +116,18 @@ namespace gnn_data{
 		LayerBatch(){
 		}
 
-		void initLayerBatch(unsigned clz,unsigned int bz, bool input){
+		unsigned int initLayerBatch(unsigned clz,unsigned int bz, bool input){
 			bsize = bz;
 			clayer = clz;
 			allocDevMem<DATA_T>(&A_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Activation Layer Batch Matrix");
 			if(!input) allocDevMem<DATA_T>(&D_j,sizeof(DATA_T)*bsize*clayer,"Error Allocating Delta Layer Batch Matrix");
+			return sizeof(DATA_T)*bsize*clayer + input ? 0 : sizeof(DATA_T)*bsize*clayer;
+
 		}
 
-		void initOutputBatch(){
+		unsigned int initOutputBatch(){
 			allocDevMem<DATA_T>(&Y, sizeof(DATA_T)*clayer * bsize, "Error allocating Output Y matrix");
+			return sizeof(DATA_T)*clayer * bsize;
 		}
 
 		~LayerBatch(){
@@ -111,10 +150,11 @@ namespace gnn_data{
 
 			}
 
-			void initLayer(unsigned int clz, unsigned int nlz){
+			unsigned int initLayer(unsigned int clz, unsigned int nlz){
 				clayer = clz;
 				nlayer = nlz;
 				allocDevMem<DATA_T>(&W_j, sizeof(DATA_T)*clayer*nlayer, "Error Allocating Weight Matrix");
+				return sizeof(DATA_T)*clayer*nlayer;
 			}
 
 			~Layer(){
@@ -130,21 +170,54 @@ namespace gnn{
 		public:
 			GNeuralNetwork(ACT_F F){
 				this->F = F;
+				cudaSetDevice(CUDA_DEVICE);
 			};
 
 			~GNeuralNetwork(){
 				if(network != NULL) delete[] network;
-				if(examples != NULL) cudaFreeHost(examples);
+				if(hExamples != NULL) cudaFreeHost(hExamples);
 				if(batch != NULL) delete[] batch;
+				if(hTest !=NULL) cudaFreeHost(hTest);
 			}
 
 			void createLayers(std::vector<int> layers);
 			void loadExamplesFromFile(std::string file);
+			void loadTestExamplesFromFile(std::string file);
 			void train();
 
 			void setBatchSize(unsigned int bz){ this->bsize = bz; }
 			void useTranspose(bool transpose){ this->transpose = transpose; }
-			void setLearningRate(double lrate){ this->lrate = lrate; }
+			void setLearningRate(float lrate){ this->lrate = lrate; }
+
+			void printConfig(double tt){
+				unsigned int weights = 0;
+				unsigned batches = 0;
+				unsigned int mem = 0;
+				unsigned int flops = 0,rflops=0;
+				for(int i = 0;i < layers-1 ;i++){
+					weights+= network[i].nlayer * network[i].clayer;
+					batches +=  network[i].clayer * bsize;
+
+					rflops+= network[i].nlayer * 2 *network[i].clayer // A(i+1) = W(i) * A(i)
+							+ network[i].nlayer * 2 *network[i].clayer//D(i) = W(i)^T * D(i+1)
+							+ network[i].nlayer * 2 *network[i].clayer + network[i].nlayer //// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
+							+ network[i].nlayer *network[i].clayer; //W(i) = W(i) + Sum(D(i+1) * A(i))
+					flops += network[i].nlayer * 2 *network[i].clayer * bsize // A(i+1) = W(i) * A(i)
+							+ network[i].nlayer * 2 *network[i].clayer * bsize//D(i) = W(i)^T * D(i+1)
+							+ network[i].clayer * bsize + network[i].nlayer * 2 *network[i].clayer * bsize// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
+							+ bsize * network[i].clayer * network[i].nlayer + network[i].clayer* network[i].nlayer;
+				}
+				mem +=  weights *  4 + batches * 4;
+				std::cout<< "Layers: " << layers-1 << std::endl;
+				std::cout<< "Weights: " << weights << std::endl;
+				std::cout<< "Mem Requirements estimate (bytes): " << mem << std::endl;
+				std::cout<< "Mem Requirements (bytes): " << this->mem << std::endl;
+				std::cout << "Batch size: " << bsize <<std::endl;
+				//std::cout << "FLOPS: " << flops << std::endl;
+				std::cout << "Elapsed time (secs)" << tt/1000 <<std::endl;
+				std::cout << "Estimated FLOP: " << rflops * dimEx.first << std::endl;
+				std::cout << "Achieved GFLOPS: " << ((double)(rflops * dimEx.first)/(tt/1000))/(1024*1024*1204) << std::endl;
+			}
 
 			/*
 			 * Testing methods
@@ -152,39 +225,63 @@ namespace gnn{
 			void bench_act();
 			void print_weights();
 			void bench_test_kernels(UnitTest test,unsigned int m, unsigned int n, unsigned int k, bool debug);
+			void classify();
+			bool validateInput(){
+				if(network == NULL) vz::error("Initialize neural network before validation\n");
+				//std::cout << network[0].clayer-1 + network[layers-2].nlayer <<std::endl;
+				return (network[0].clayer-1 + network[layers-2].nlayer == dimEx.second);
+			};
 
 		private:
-			void createLayerBatch();
+			unsigned int createLayerBatch();
 			void randomInit();
 
 			unsigned int layers = 0;
 			unsigned int bsize = 0;//default value.
-			double lrate =0.314;
+			float lrate =0.314;
 			bool transpose = true;
+			unsigned int mem = 0;
 
 			arr2D dimEx;
+			arr2D dimT;
 			gnn_data::LayerBatch<DATA_T> *batch = NULL;
 			gnn_data::Layer<DATA_T> *network = NULL;
-			DATA_T *examples = NULL;
+			DATA_T *hExamples = NULL, *dExamples = NULL;
+			DATA_T *hTest = NULL, *dTest = NULL;
 			ACT_F F;
 	};
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::loadExamplesFromFile(std::string file){
+		cudaSetDevice(CUDA_DEVICE);
 		IOTools<DATA_T> iot;
 		dimEx = iot.dataDim(file);
-		iot.freadFile(examples,file,true);
+		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		iot.freadFile(hExamples,file,true);
+		allocDevMem<DATA_T>(&dExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error Allocating dExamples memory");
+		safeCpyToDevice<DATA_T>(dExamples,hExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error copying data to dExamples");
+	}
+
+	template<typename DATA_T, typename ACT_F>
+	void GNeuralNetwork<DATA_T,ACT_F>::loadTestExamplesFromFile(std::string file){
+		cudaSetDevice(CUDA_DEVICE);
+		IOTools<DATA_T> iot;
+		dimT = iot.dataDim(file);
+		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		iot.freadFile(hTest,file,true);
 	}
 
 	template<typename DATA_T, typename ACT_F>
 	void GNeuralNetwork<DATA_T,ACT_F>::createLayers(std::vector<int> layers){
+		cudaSetDevice(CUDA_DEVICE);
 		if(layers.size() <= 0 ) vz::error("Network architecture not valid!");
 		this->layers = layers.size();
 		network = new gnn_data::Layer<DATA_T>[this->layers-1];
 
 		/*clayer+1 = Weight matrix includes additional column for bias. nlayer x (clayer + 1)*/
-		for(int i = 0;i<this->layers-1;i++) network[i].initLayer(layers[i]+1,layers[i+1]);
+		for(int i = 0;i<this->layers-1;i++) mem+=network[i].initLayer(layers[i]+1,layers[i+1]);
 		randomInit();
+		createLayerBatch();
 	}
 
 	/*
@@ -192,18 +289,21 @@ namespace gnn{
 	 * layer.
 	 */
 	template<typename DATA_T, typename ACT_F>
-	void GNeuralNetwork<DATA_T,ACT_F>::createLayerBatch(){
+	unsigned int GNeuralNetwork<DATA_T,ACT_F>::createLayerBatch(){
+		cudaSetDevice(CUDA_DEVICE);
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
-		if(examples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
-		if(bsize > dimEx.second) bsize = dimEx.second;
+		if(hExamples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
+		//if(bsize > dimEx.first) bsize = dimEx.first;
 		if(batch != NULL) delete[] batch;
 		batch = new gnn_data::LayerBatch<DATA_T>[this->layers];
 
 		/*(clayer - 1) = Activation does not include bias vector*/
-		batch[0].initLayerBatch(network[0].clayer-1,this->bsize,true);
+		//printf("batch_size: %d\n",this->bsize);
+		mem+=batch[0].initLayerBatch(network[0].clayer-1,this->bsize,true);
 		/*nlayer is current layer without bias vector for activation matrix*/
-		for(int i = 0; i < this->layers-1;i++) batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
-		batch[this->layers-1].initOutputBatch();//Initialize Y Matrix
+		for(int i = 0; i < this->layers-1;i++) mem+=batch[i+1].initLayerBatch(network[i].nlayer,this->bsize,false);
+		mem+=batch[this->layers-1].initOutputBatch();//Initialize Y Matrix
+		return mem;
 	}
 }
 

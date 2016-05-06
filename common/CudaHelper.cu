@@ -52,7 +52,10 @@ __host__ void cudaInitRandStates(){
  *
  */
 __host__ void handleDeviceErrors(cudaError_t error, std::string comment){
-	if (error != cudaSuccess){ std::cout << "Cuda Error: " << comment << "," << cudaGetErrorString(error) << std::endl; }
+	if (error != cudaSuccess){
+		std::cout << "Cuda Error: " << comment << "," << cudaGetErrorString(error) << std::endl;
+		exit(1);
+	}
 }
 
 /*
