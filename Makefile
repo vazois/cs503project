@@ -19,8 +19,8 @@ all: compile
 
 compile:
 	$(CC) -std=c++11 -c $(CPP_FILES) -L $(INCLUDE_LIB) $(LIB_FLAGS) -I$(INCLUDE_PATHS)
-	$(NVCC) -std=c++11 $(NVCC_FLAGS) -c $(CU_FILES)
-	$(NVCC) -std=c++11 -gencode arch=compute_35,code=sm_35 *.o -o $(EXEC)
+	$(NVCC) --optimize 3 -std=c++11 $(NVCC_FLAGS) -c $(CU_FILES)
+	$(NVCC) --optimize 3 -std=c++11 -gencode arch=compute_35,code=sm_35 *.o -o $(EXEC)
 	
 clean:
 	rm *.o

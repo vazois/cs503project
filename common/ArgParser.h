@@ -21,6 +21,7 @@ const static std::string HELP="-h";
 const static std::string TARG="-t";
 const static std::string DPT="-pt";//DATA PER THREAD// CUDA ONLY
 const static std::string BARG="-b";
+const static std::string IARG="-i";
 
 const static std::string DARG_H="data dimensionality.";
 const static std::string CARG_H="data cardinality.";

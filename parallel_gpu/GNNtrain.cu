@@ -346,7 +346,6 @@ namespace gnn{
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(bsize == 0) vz::error("Batch size not set. Use setBatchSize first!");
 		unsigned int nbatch = this->transpose ? dimEx.first / this->bsize : dimEx.second / this->bsize;
-		//createLayerBatch();
 
 		//std::cout<<"nbatch: " << nbatch << std::endl;
 		//for(int i = 0;i < 2;i++){
@@ -414,6 +413,7 @@ namespace gnn{
 				printf("diff0%d = sum(sum(round(Ejj-Ajj)))\n",j);
 				}
 			}
+			//continue;
 
 			/*
 			 * Output layer Delta computation.
@@ -584,10 +584,9 @@ namespace gnn{
 		cudaSetDevice(CUDA_DEVICE);
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(bsize == 0) vz::error("Batch size not set. Use setBatchSize first!");
-		unsigned int nbatch = this->transpose ? dimEx.first / this->bsize : dimEx.second / this->bsize;
+		unsigned int nbatch = this->transpose ? dimT.first / this->bsize : dimT.second / this->bsize;
 		unsigned int count =0;
-
-		if(DEBUG_GNN) std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		if(DEBUG_GNN) std::cout<<dimT.first << "," << dimT.second << std::endl;
 		if(DEBUG_GNN) std::cout<< "nbatch: " << nbatch << std::endl;
 
 		DATA_T *Y,*A;
@@ -605,7 +604,7 @@ namespace gnn{
 				dim3 lblock(TTILE,TTILE);
 				//print_grid(lgrid,lblock);
 				gnn_kernels::loadT<DATA_T,TTILE><<<lgrid,lblock>>>(
-						batch[0].A_j,hExamples,
+						batch[0].A_j,dTest,
 						batch[0].clayer,batch[0].bsize,
 						dimT.first,dimT.second,
 						bRow,0);
@@ -637,9 +636,9 @@ namespace gnn{
 			dim3 lgrid((batch[layers-1].clayer-1)/TTILE + 1, (batch[layers-1].bsize-1)/TTILE + 1);
 			dim3 lblock(TTILE,TTILE);
 			gnn_kernels::loadT<DATA_T,TTILE><<<lgrid,lblock>>>(
-					batch[layers-1].Y,hExamples,
+					batch[layers-1].Y,dTest,
 					batch[layers-1].clayer,batch[layers-1].bsize,
-					dimEx.first,dimEx.second,
+					dimT.first,dimT.second,
 					bRow,batch[0].clayer
 			);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing loadT for Y batch on classify");
@@ -656,7 +655,8 @@ namespace gnn{
 				if(indexY == indexA ) count++;
 			}
 		}
-		printf("Accuracy: %2.f, %u, %lu\n",((float)count/dimT.first)*100,count, dimT.first);
+		printf("Accuracy: %2.f, %u, %lu\n",(((float)count)/dimT.first)*100,count, dimT.first);
+		cudaFreeHost(Y); cudaFreeHost(A);
 	}
 
 	/*
@@ -745,7 +745,7 @@ namespace gnn{
 							bsize
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmul");
-			//if(!debug) t.lap("GPU mmul elapsed time");
+			if(!debug) t.lap("GPU mmul elapsed time");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -798,7 +798,7 @@ namespace gnn{
 					bsize
 			);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
-			//if(!debug) t.lap("GPU tmmul elapsed time");
+			if(!debug) t.lap("GPU tmmul elapsed time");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * clayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -863,7 +863,7 @@ namespace gnn{
 					bsize
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing hmprod_tmmul kernel");
-			//t.lap("GPU hmprod mmul");
+			t.lap("GPU hmprod mmul");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -919,7 +919,7 @@ namespace gnn{
 					0.0231
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tvecpvec kernel");
-			//t.lap("GPU tvecpvec lapsed time");
+			t.lap("GPU tvecpvec lapsed time");
 
 			if(debug){
 				//printf("R=");

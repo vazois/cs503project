@@ -121,11 +121,11 @@ void example03(ArgParser ap){
 
 	Time<millis> t;
 	t.start();
-	for(int i =0 ;i<1000;i++){
-		s.bench_test_kernels(MMUL,1024,1024,1024,false);
-		s.bench_test_kernels(TMMUL,1024,1024,1024,false);
-		s.bench_test_kernels(MHPROD,1024,1024,1024, false);
-		s.bench_test_kernels(TVECPVEC,1024,1024,1024,false);
+	for(int i =0 ;i<1;i++){
+		s.bench_test_kernels(MMUL,2048,2048,2048,false);
+		s.bench_test_kernels(TMMUL,2048,2048,2048,false);
+		s.bench_test_kernels(MHPROD,2048,2048,2048, false);
+		s.bench_test_kernels(TVECPVEC,2048,2048,2048,false);
 	}
 	t.lap();
 }
@@ -144,21 +144,31 @@ void example04(ArgParser ap){
 	std::vector<int> layers;
 	layers.push_back(784);
 	layers.push_back(700);
+	layers.push_back(1024);
 	layers.push_back(10);
+
+	unsigned int iterations = ap.exists(IARG) ? ap.getUint(IARG) : 10 ;
+	unsigned int b = ap.exists(BARG) ? ap.getUint(BARG) : 2000 ;
+	float r = ap.exists(DARG) ? ap.getUint(DARG) : 0.1 ;
+	std::cout<<"i:" << iterations << std::endl;
+	std::cout<<"b:" << b << std::endl;
+	std::cout<<"r:" << r << std::endl;
 
 	s.setBatchSize(ap.getUint(BARG));
 	s.useTranspose(true);
-	s.setLearningRate(0.3);
+	s.setLearningRate(r);
 	s.createLayers(layers);
 	if(!s.validateInput()) vz::error("Input + Ouput Neurons != number of features");
 
-	unsigned int iterations = 50;
+	std::cout<<"Training...";
 	t.start();
-	for(int i = 0;i<iterations;i++) s.train();
+	for(int i = 0;i<iterations;i++){ s.train(); } std::cout << std::endl;
 	s.printConfig(t.lap("Training Execution Time(ms)")/iterations);
-	//s.print_weights();
-	s.classify();
 
+	t.start();
+	std::cout<<"Computing Classification Accuracy..." << std::endl;
+	s.classify();
+	t.lap("Classification Elapsed Time");
 }
 
 int main(int argc, char **argv){

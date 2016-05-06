@@ -214,7 +214,7 @@ namespace gnn{
 				std::cout<< "Mem Requirements (bytes): " << this->mem << std::endl;
 				std::cout << "Batch size: " << bsize <<std::endl;
 				//std::cout << "FLOPS: " << flops << std::endl;
-				std::cout << "Elapsed time (secs)" << tt/1000 <<std::endl;
+				std::cout << "Elapsed time per training iteration (ms)" << tt <<std::endl;
 				std::cout << "Estimated FLOP: " << rflops * dimEx.first << std::endl;
 				std::cout << "Achieved GFLOPS: " << ((double)(rflops * dimEx.first)/(tt/1000))/(1024*1024*1204) << std::endl;
 			}
@@ -269,6 +269,8 @@ namespace gnn{
 		dimT = iot.dataDim(file);
 		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
 		iot.freadFile(hTest,file,true);
+		allocDevMem<DATA_T>(&dTest,sizeof(DATA_T)*dimT.first*dimT.second,"Error Allocating dTest memory");
+		safeCpyToDevice<DATA_T>(dTest,hTest,sizeof(DATA_T)*dimT.first*dimT.second,"Error copying data to dTest");
 	}
 
 	template<typename DATA_T, typename ACT_F>
