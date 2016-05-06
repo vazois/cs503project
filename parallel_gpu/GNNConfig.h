@@ -226,6 +226,11 @@ namespace gnn{
 			void print_weights();
 			void bench_test_kernels(UnitTest test,unsigned int m, unsigned int n, unsigned int k, bool debug);
 			void classify();
+			bool validateInput(){
+				if(network == NULL) vz::error("Initialize neural network before validation\n");
+				//std::cout << network[0].clayer-1 + network[layers-2].nlayer <<std::endl;
+				return (network[0].clayer-1 + network[layers-2].nlayer == dimEx.second);
+			};
 
 		private:
 			unsigned int createLayerBatch();
@@ -241,8 +246,8 @@ namespace gnn{
 			arr2D dimT;
 			gnn_data::LayerBatch<DATA_T> *batch = NULL;
 			gnn_data::Layer<DATA_T> *network = NULL;
-			DATA_T *hExamples = NULL;
-			DATA_T *hTest = NULL;
+			DATA_T *hExamples = NULL, *dExamples = NULL;
+			DATA_T *hTest = NULL, *dTest = NULL;
 			ACT_F F;
 	};
 
@@ -253,6 +258,8 @@ namespace gnn{
 		dimEx = iot.dataDim(file);
 		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
 		iot.freadFile(hExamples,file,true);
+		allocDevMem<DATA_T>(&dExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error Allocating dExamples memory");
+		safeCpyToDevice<DATA_T>(dExamples,hExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error copying data to dExamples");
 	}
 
 	template<typename DATA_T, typename ACT_F>
@@ -286,7 +293,7 @@ namespace gnn{
 		cudaSetDevice(CUDA_DEVICE);
 		if(network == NULL) vz::error("Network architecture missing. Use createLayers first!");
 		if(hExamples == NULL) vz::error("Examples not loaded. Use loadExamplesFromFile!");
-		if(bsize > dimEx.first) bsize = dimEx.first;
+		//if(bsize > dimEx.first) bsize = dimEx.first;
 		if(batch != NULL) delete[] batch;
 		batch = new gnn_data::LayerBatch<DATA_T>[this->layers];
 

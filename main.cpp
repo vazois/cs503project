@@ -130,12 +130,43 @@ void example03(ArgParser ap){
 	t.lap();
 }
 
+void example04(ArgParser ap){
+	gnn_actf::Sigmoid gs;
+	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
+
+	Time<millis> t;
+	t.start();
+	s.loadExamplesFromFile("../mnist_train.csv");
+	s.loadTestExamplesFromFile("../mnist_test.csv");
+	t.lap("Read Train and Test Data");
+
+
+	std::vector<int> layers;
+	layers.push_back(784);
+	layers.push_back(700);
+	layers.push_back(10);
+
+	s.setBatchSize(ap.getUint(BARG));
+	s.useTranspose(true);
+	s.setLearningRate(0.3);
+	s.createLayers(layers);
+	if(!s.validateInput()) vz::error("Input + Ouput Neurons != number of features");
+
+	unsigned int iterations = 50;
+	t.start();
+	for(int i = 0;i<iterations;i++) s.train();
+	s.printConfig(t.lap("Training Execution Time(ms)")/iterations);
+	//s.print_weights();
+	s.classify();
+
+}
+
 int main(int argc, char **argv){
 	ArgParser ap;
 	ap.parseArgs(argc,argv);
 	//example00(ap);
 	//example01(ap);
-	example02(ap);
+	//example02(ap);
 	//example03(ap);
-
+	example04(ap);
 }
