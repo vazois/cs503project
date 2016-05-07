@@ -28,8 +28,8 @@ float *delC_a, ***delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 10;
-int nEpochs = 50;
+int miniBatchSize = 512;
+int nEpochs = 5;
 
 void allocate_memory()
 {
@@ -259,21 +259,30 @@ void train()
 	float accuracy;
 	float entr;
 	initializeGlorot();
-	ofstream fout("Cost_train.log");
+//	ofstream fout("Cost_train.log");
+	double timePerEpoch = 0.0;
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		Timer.reset();
-		for(int i = 0; i < numMiniBatches; i++)
+		int i;
+		for(i = 0; i < numMiniBatches - 1; i++)
 			trainMiniBatch(i*miniBatchSize, (i+1)*miniBatchSize - 1);
+		trainMiniBatch(i*miniBatchSize, NUM_TRAIN - 1);
 		cout << "Epoch: " << epoch << endl;
-		cout << "\t\t"; Timer.lap("secs");
-		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);			
-		cout << "\t\tTraining cost = " << entr << endl;		
-		fout << entr << endl;
-		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
-		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
+		if(epoch > 0)
+		{
+			cout << "\t\t"; 
+			timePerEpoch += Timer.lap("secs");
+		}
+//		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);			
+//		cout << "\t\tTraining cost = " << entr << endl;		
+//		fout << entr << endl;
+//		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
+//		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
-	fout.close();
+	timePerEpoch /= nEpochs;
+	cout << "Average time per epoch = " << timePerEpoch << endl;
+//	fout.close();
 }
 
 int main(int argc, char *argv[])
