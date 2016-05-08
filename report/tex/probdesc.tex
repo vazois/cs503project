@@ -12,27 +12,26 @@ The classifier (neural network) learns the function $f$ from the training data $
 This minimization can be carried out using optimization algorithms like Gradient Descent, Newton's method, Levenberg-Marquardt algorithm etc.
 Though Newton's method is a second-order optimization technique, it requires the computation of the hessian of the objective function which is very prohibitive for a large number of parameters like in a neural network.
 Levenberg-Marquardt algorithm also requires computing matrices of the size of hessian and can be very slow for classifiers with a large number of parameters.
-Currently Gradient Descent is the most successful technique to train huge neural networks with millions of parameters, since it provides a decent tradeoff between convergence speed and memory requirements. We will describe gradient descent in section \ref{BackProp}.
+Currently Gradient Descent is the most successful technique to train huge neural networks with millions of parameters, since it provides a decent tradeoff between convergence speed and memory requirements.
+We will describe gradient descent in section \ref{BackProp}. Now we describe a feedforward neural network.
 
- which in its most naive form is implemented as follows:
-\begin{enumerate}
-\item Initialize all weights $(\theta)$ randomly with small values close to 0.
-\item Repeat until convergence \{
-\begin{equation*}
-\theta_k := \theta_k - \alpha \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \hspace{16pt} \forall k \in \{1,2,...,K\}
-\end{equation*}
-\}
-\end{enumerate}
-Note that the derivative of the loss function generally takes the following form:
-\begin{equation*}
-\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} = \frac{1}{N} \sum_{i=1}^N ( y_i - f(x_i; \theta)) \frac{\partial f(x_i; \theta)}{\partial \theta_k}
-\end{equation*}
-Since this requires a summation over all the training examples, the gradient computation is the biggest bottleneck for many supervised learning tasks on huge data sets.
+The basic unit of feedforward neural networks is a neuron. A single neuron generally takes a vector of inputs $x \in \mathbb{R}^n$ and outputs a single scalar $y \in \mathbb{R}$. Generally the function computed by a neuron comprises of linear transformation on the input vector followed by a point-wise non-linear activation function:
+\begin{align}
+y = f(w^T x + b)
+\end{align}
+where $w \in \mathbb{R}^n$ is called the weight vector and $b \in \mathbb{R}$ is the scalar bias of the neuron.
+Many different kinds of activation functions have been studied and are used according to the task at hand e.g. linear, sigmoid, tanh, ReLU etc. We will use the sigmoid and linear$(f(z) = z)$ activation functions in our implementation.
+The sigmoid function is defined as follows:
+\begin{align}
+f(z) = \frac{1}{1 + e^{-z}}
+\end{align}
+A feedforward neural network is a directed acyclic graph $G = (V,E)$ each of whose vertices $v \in V$ is a neuron and every edge $(u,v) \in E$ represents the output of neuron $u$ going as an input to neuron $v$. In general to have a more concrete structure the graph $G$ is organized into a layered structure and we will only use layered feedforward neural networks in our implementations.
 
-On the other hand, having the gradient as a sum of partial gradients with respect to individual training examples opens up the possibility of parallelizing the gradient computation efficiently.
-This can be done by distributing training examples across various processors/machines and letting them compute a partial gradient over their own training examples and then summing up these partial gradients to get the actual gradient.
-A good approximation of this process can be obtained by using a mini-batch of training examples per iteration, instead of using the full dataset.
-\\
+A feedforward network with $L$ layers comprises of a single input layer, $L-2$ hidden layers and a final output layer.
+The $l^{th}$ layer has $N_l$ neurons and the full network has $N = \sum_{l=1}^L N_l$ neurons.
+
+The first layer is the input layer and contains $N_1 = N_{in}$ dummy neurons each of which takes a single scalar input out of $N_{in}$ and passes it as it is.
+The output from the input layer is a vector of size
 \\
 \\
 Add details specific to neural nets
