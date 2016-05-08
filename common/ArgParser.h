@@ -45,6 +45,7 @@ public:
 	void addArg(std::string, std::string);
 	int getInt(const std::string);
 	unsigned int getUint(const std::string);
+	float getFloat(const std::string);
 	std::string getString(std::string);
 
 	std::string mysetw(int,int);
@@ -96,6 +97,9 @@ unsigned int ArgParser::getUint(std::string arg){
 	return atoi(this->args[arg].c_str());
 }
 
+float ArgParser::getFloat(std::string arg){
+	return atof(this->args[arg].c_str());
+}
 
 std::string ArgParser::getString(std::string arg){
 	return this->args[arg];

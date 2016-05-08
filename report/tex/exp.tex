@@ -5,3 +5,19 @@ Describe datasets and classification task \\
 Decribe experimental network sizes \\
 Describe hyperparameter selection \\
 Describe experiments: serial vs pthreads vs cuda vs theano.
+
+\begin{itemize}
+    \item Serial implementation of Mini-batch Gradient Descent(MGD) in C++
+    \item Parallel implementation of MGD in C++ using Pthreads
+    \item Comparison between serial MGD, parallel MGD with OpenMP and Theano's gradient descent (CPU)
+    \item Parallel MGD using Cuda-C on a GPU
+    \item Comparison between serial MGD, parallel MGD (Cuda) and Theano's gradient descent (GPU)
+\end{itemize}
+
+To test the above implementations, we will use the following datasets: 
+\begin{itemize}
+    \item \textbf{MNIST} - This is a database of handwritten digits that is commonly used for training various image processing systems. It has 60,000 images each of size 28$\times$28 pixels. The task is to classify the digit in the image. 
+    \item \textbf{KDD Cup 1999} - This is a data set designed for intrusion detection (distinguishing bad network connections from good ones). It has about 4 million data points each of which has 42 features.  
+\end{itemize}
+
+Note that since Theano is a state of the art Deep Learning library which performs many other optimizations apart from just parallelizing Neural Network training, we do not expect our code to run faster than Theano. Instead the comparison will be done to see how close we can get to the current state of the art by simply parallelizing the Neural Network training.

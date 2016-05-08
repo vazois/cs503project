@@ -2,7 +2,7 @@
 #include "../common/Time.h"
 
 #define TTILE 32
-#define LTILE 16
+#define LTILE 32
 
 #define DPT 4 //DATA PER THREADS
 #define BSIZE 512
@@ -115,12 +115,15 @@ namespace gnn_kernels{
 			else sAj[loadOffset] = 0.0;
 			__syncthreads();
 
-			for(int j = 0;j < TILE; j++) Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
+//#pragma unroll
+			for(int j = 0;j < TILE; j++){
+				Ajj = Ajj + sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
+			}
+
 			__syncthreads();
 		}
 
 		if( row < nlayer && col < bsize )
-			//A_jj[row * bsize + col ] = Ajj;//TODO: enable activation//
 			A_jj[row * bsize + col ] = F.F(Ajj);
 	}
 
@@ -222,9 +225,7 @@ namespace gnn_kernels{
 		}
 
 
-		if( row < nlayer && col < bsize )
-			//D_j[row * bsize + col] *= Dj;
-			D_j[row * bsize + col ] *= F.D(Dj);
+		if( row < nlayer && col < bsize ) D_j[row * bsize + col ] *= F.D(Dj);
 	}
 
 	/*
@@ -260,15 +261,12 @@ namespace gnn_kernels{
 				sDjj[threadIdx.y * TILE + threadIdx.x] = 0.0;
 
 			if(rowA < clayer && (i*TILE + threadIdx.x) < bsize)
-				//sAj[threadIdx.y * TILE + threadIdx.x] = A_j[rowA * bsize + i*TILE + threadIdx.x];
 				sAj[threadIdx.x * TILE + threadIdx.y] = A_j[rowA * bsize + i*TILE + threadIdx.x];
 			else
-				//sAj[threadIdx.y * TILE + threadIdx.x] = A_j[rowA * bsize + i*TILE + threadIdx.x];
 				sAj[threadIdx.x * TILE + threadIdx.y] = 1.0;//Required to update bias weights//
 			__syncthreads();
 
 			for(int j = 0 ; j < TILE; j++)
-				//Wj += sDjj[threadIdx.y * TILE + j] * sAj[threadIdx.x * TILE + j];
 				Wj += sDjj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
 			__syncthreads();
 		}
@@ -276,8 +274,6 @@ namespace gnn_kernels{
 		int col = (blockIdx.x * blockDim.x + threadIdx.x);
 		Wj *= (lrate / bsize);
 		if( rowD < nlayer && col < clayer + 1)//clayer + 1 to update bias weights.
-			//W_j[rowD * (clayer + 1) + col] = Wj;
-			//W_j[rowD * (clayer + 1) + col] += Wj;
 			W_j[rowD * (clayer + 1) + col] += Wj;
 	}
 

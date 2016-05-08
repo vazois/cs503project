@@ -1,0 +1,8 @@
+\beamer@endinputifotherversion {3.36pt}
+\beamer@sectionintoc {1}{Problem statement}{3}{0}{1}
+\beamer@sectionintoc {2}{Why mini batch?}{5}{0}{2}
+\beamer@sectionintoc {3}{Parallelization Methods}{8}{0}{3}
+\beamer@subsectionintoc {3}{1}{POSIX Threads}{8}{0}{3}
+\beamer@subsectionintoc {3}{2}{CUDA}{10}{0}{3}
+\beamer@sectionintoc {4}{Experiments}{14}{0}{4}
+\beamer@sectionintoc {5}{Results and analysis}{17}{0}{5}

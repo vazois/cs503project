@@ -1,6 +1,6 @@
 \section{Parallelization Methods}
-    \subsection{Pthreads}
-        \begin{frame}{Pthreads - POSIX threads}
+    \subsection{POSIX Threads}
+        \begin{frame}{PThreads - POSIX Threads}
             \begin{itemize}
                 \item {
                     \textbf{Low level multithreading API} - Threads are created and each task is assigned to each thread in parallel.
@@ -12,12 +12,62 @@
         \end{frame}
         
 
-    \subsection{CUDA on GPU}
-        \begin{frame}{CUDA}
-          \begin{itemize}
-              \item {
-               \textbf{TODO} - General concepts and how CUDA is used in our project
-                    }
-          \end{itemize}
-        \end{frame}
+\subsection{CUDA}
+\begin{frame}{Design Overview}
+
+\begin{itemize}
+
+\item{ Neural Network Training Steps }
+\begin{itemize}
+\item{\textbf{Forward propagation:}  \\$A_{i+1} = f(W_{i} \cdot A_{i})$}
+\item{\textbf{Back propagation:}  \\$D_L =Y - A_L$,\\ $D_i = (W_{i})^{T}\cdot D_{i+1} \circ d(W_{i-1} \cdot A_{i-1})$}
+\item{\textbf{Weight update:} \\$W_{i} = W_{i} + \frac{n}{b} \cdot \sum_{j=1}^{b} D_{i+1}^{j} \cdot A_{i}^j$}
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=2.4in]{gpu_neural_net_data.png}
+\end{center}
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{GPU Implementation Details}
+\begin{itemize}
+\item{Training Kernels}
+\begin{itemize}
+\item{ Variants of tiled matrix multiplication }
+\item{ Each thread is responsible for computing a single matrix cell }
+\item{ On-chip memory for amplifying }
+\end{itemize}
+
+\includegraphics[width=2.0in]{matrix-multiplication-with-shared-memory.png}
+
+
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{GPU Implementation Details (2)}
+\begin{itemize}
+
+\item{Optimization}
+\begin{itemize}
+\item{Coalesced access to global memory by iterating over the secondary dimension}
+\item{Same strategy eliminates shared memory bank conflicts }
+\end{itemize}
+
+\includegraphics[width=3.0in]{gpu_mem_access.png}
+
+\item{Neural Network Customization}
+\begin{itemize}
+\item{Single or double precision arithmetic}
+\item{User preferred activation function}
+\item{Abstract definition of network architecture and training parameters (i.e. batch size, learning rate) }
+
+\end{itemize}
+
+
+\end{itemize}
+\end{frame}
     

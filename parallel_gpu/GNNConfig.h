@@ -6,7 +6,7 @@
 #include "../common/CudaHelper.h"
 #include "../common/IOTools.h"
 
-#define CUDA_DEVICE 2
+#define CUDA_DEVICE 0
 
 enum UnitTest{
 		MMUL,//MATRIX MULTIPLICATION

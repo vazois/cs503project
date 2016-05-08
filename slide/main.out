@@ -1,0 +1,7 @@
+\BOOKMARK [2][]{Outline0.1}{Problem statement}{}% 1
+\BOOKMARK [2][]{Outline0.2}{Why mini batch?}{}% 2
+\BOOKMARK [2][]{Outline0.3}{Parallelization Methods}{}% 3
+\BOOKMARK [3][]{Outline0.3.1.8}{POSIX Threads}{Outline0.3}% 4
+\BOOKMARK [3][]{Outline0.3.2.10}{CUDA}{Outline0.3}% 5
+\BOOKMARK [2][]{Outline0.4}{Experiments}{}% 6
+\BOOKMARK [2][]{Outline0.5}{Results and analysis}{}% 7

@@ -134,27 +134,71 @@ void example04(ArgParser ap){
 	gnn_actf::Sigmoid gs;
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 
+	//gnn_actf::FSigmoid fgs;
+	//gnn::GNeuralNetwork<float,gnn_actf::FSigmoid> s(fgs);
+
 	Time<millis> t;
 	t.start();
 	s.loadExamplesFromFile("../mnist_train.csv");
 	s.loadTestExamplesFromFile("../mnist_test.csv");
 	t.lap("Read Train and Test Data");
 
-
 	std::vector<int> layers;
-	layers.push_back(784);
-	layers.push_back(700);
-	layers.push_back(1024);
-	layers.push_back(10);
+	layers.push_back(784);//Input Layer
+	layers.push_back(1024);//Hidden Layer
+	layers.push_back(10);//Output Layer
 
-	unsigned int iterations = ap.exists(IARG) ? ap.getUint(IARG) : 10 ;
-	unsigned int b = ap.exists(BARG) ? ap.getUint(BARG) : 2000 ;
-	float r = ap.exists(DARG) ? ap.getUint(DARG) : 0.1 ;
+	unsigned int iterations = ap.exists(IARG) ? ap.getUint(IARG) : 50 ;
+	unsigned int b = ap.exists(BARG) ? ap.getUint(BARG) : 100 ;
+	float r = ap.exists(DARG) ? ap.getFloat(DARG) : 0.1 ;
 	std::cout<<"i:" << iterations << std::endl;
 	std::cout<<"b:" << b << std::endl;
 	std::cout<<"r:" << r << std::endl;
 
-	s.setBatchSize(ap.getUint(BARG));
+	s.setBatchSize(b);
+	s.useTranspose(true);
+	s.setLearningRate(r);
+	s.createLayers(layers);
+	if(!s.validateInput()) vz::error("Input + Ouput Neurons != number of features");
+
+	std::cout<<"Training...";
+	t.start();
+	for(int i = 0;i<iterations;i++){ s.train(); } std::cout << std::endl;
+	s.printConfig(t.lap("Training Execution Time(ms)")/iterations);
+
+	t.start();
+	std::cout<<"Computing Classification Accuracy..." << std::endl;
+	s.classify();
+	t.lap("Classification Elapsed Time");
+}
+
+void example05(ArgParser ap){
+	gnn_actf::Sigmoid gs;
+	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
+
+	//gnn_actf::FSigmoid fgs;
+	//gnn::GNeuralNetwork<float,gnn_actf::FSigmoid> s(fgs);
+
+	Time<millis> t;
+	t.start();
+	s.loadExamplesFromFile("../mnist_train.csv");
+	s.loadTestExamplesFromFile("../mnist_test.csv");
+	t.lap("Read Train and Test Data");
+
+	std::vector<int> layers;
+	layers.push_back(784);//Input Layer
+	layers.push_back(1024);//Hidden Layer 1
+	layers.push_back(1024);//Hidden Layer 2
+	layers.push_back(10);//Output Layer
+
+	unsigned int iterations = ap.exists(IARG) ? ap.getUint(IARG) : 50 ;
+	unsigned int b = ap.exists(BARG) ? ap.getUint(BARG) : 100 ;
+	float r = ap.exists(DARG) ? ap.getFloat(DARG) : 0.1 ;
+	std::cout<<"i:" << iterations << std::endl;
+	std::cout<<"b:" << b << std::endl;
+	std::cout<<"r:" << r << std::endl;
+
+	s.setBatchSize(b);
 	s.useTranspose(true);
 	s.setLearningRate(r);
 	s.createLayers(layers);
@@ -179,4 +223,5 @@ int main(int argc, char **argv){
 	//example02(ap);
 	//example03(ap);
 	example04(ap);
+	//example05(ap);
 }
