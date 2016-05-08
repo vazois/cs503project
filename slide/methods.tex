@@ -3,11 +3,21 @@
         \begin{frame}{PThreads - POSIX Threads}
             \begin{itemize}
                 \item {
-                    \textbf{Low level multithreading API} - Threads are created and each task is assigned to each thread in parallel.
+                    \textbf{POSIX} : Portable Operating System Interface for UNIX
                     }
-                \item {
-                    \textbf{TODO} - ABOUT Basic functions to show how Pthread is used in our project
-                    }
+                \item { Pthreads: The POSIX threading interface}
+                \begin{itemize}
+                \item {Thread implementations adhering to the POSIX standard}
+                \item {System calls to create and synchronize threads}
+                \item {Should be relatively uniform across UNIX-like OS platforms }
+                \end{itemize}
+             \item {Pthreads supports for }
+             \begin{itemize}
+             \item {Creating parallelism}
+             \item {Synchronization}
+             \end{itemize}
+             \item {No explicit support for communication, because shared 
+memory is implicit.}
             \end{itemize}
         \end{frame}
         
