@@ -14,7 +14,7 @@
 #include <sstream>
 
 //#include "blaio.h"
-#include "cblas.h"
+// #include "cblas.h"
 
 
 
@@ -24,10 +24,21 @@
 #include "matrixop.h"
 #include "datalib.h"
 
+//#include "blaio.h"
+
 // extern "C"
 // {
-//        #include <cblas.h>
+       // #include <cblas.h>
 // }
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+   #include <cblas.h>
+#ifdef __cplusplus
+}
+#endif
 
 
 using namespace std;
@@ -40,8 +51,8 @@ float *delC_a, **delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 512;
-int nEpochs = 5;
+int miniBatchSize = 128;
+int nEpochs = 50;
 
 void allocate_memory()
 {
@@ -62,8 +73,8 @@ void allocate_memory()
 	sigDz = (float **)malloc( (num_layers - 1) * sizeof(float *) );
 	for( int i = 0 ; i < num_layers - 1; i++)
 	{
-		w[i] = (float *)malloc( layers_size[i] * layers_size[i+1] * sizeof(float *) );
-		delC_w[i] = (float *)malloc( layers_size[i] * layers_size[i+1] * sizeof(float *) );
+		w[i] = (float *)malloc( layers_size[i] * layers_size[i+1] * sizeof(float) );
+		delC_w[i] = (float *)malloc( layers_size[i] * layers_size[i+1] * sizeof(float) );
 		b[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		delta[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
 		delC_b[i] = (float *)malloc( layers_size[i+1] * sizeof(float));
@@ -104,13 +115,13 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	Timer.reset();
 	switch(dataset_type)
 	{
-		case 1: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[0], x_train[idx], 1, 0, z[0], 1);
+		case 1: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[1], x_train[idx], 1, 0, z[0], 1);
 				//mvProdT(w[0], x_train[idx], z[0], layers_size[0], layers_size[1]);
 				break;
-		case 2: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[0], x_val[idx], 1, 0, z[0], 1);
+		case 2: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[1], x_val[idx], 1, 0, z[0], 1);
 				//mvProdT(w[0], x_val[idx], z[0], layers_size[0], layers_size[1]);
 				break;
-		case 3: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[0], x_test[idx], 1, 0, z[0], 1);
+		case 3: cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[0], layers_size[1], 1, w[0], layers_size[1], x_test[idx], 1, 0, z[0], 1);
 				//mvProdT(w[0], x_test[idx], z[0], layers_size[0], layers_size[1]);
 				break;
 	}
@@ -120,7 +131,7 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 	int i;
 	for( i = 1; i < num_layers - 1; i++)
 	{
-		cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[i], layers_size[i+1], 1, w[i], layers_size[i], a[i-1], 1, 0, z[i], 1);
+		cblas_sgemv(CblasRowMajor, CblasTrans, layers_size[i], layers_size[i+1], 1, w[i], layers_size[i+1], a[i-1], 1, 0, z[i], 1);
 	//	mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 		add(z[i], b[i], z[i], layers_size[i+1]);
 		fastSigmoid(z[i], a[i], layers_size[i+1]);
@@ -145,23 +156,23 @@ void backwardPass(int idx)
 		// for( int k = 0; k < layers_size[num_layers - 1]; k++)
 			// delC_w[num_layers - 2][j][k] += ((num_layers - 2 > 0) ? a[num_layers - 3][j] : x_train[idx][j])*delta[num_layers - 2][k] ;//+ 2*lambda*w[num_layers - 2][j][k];
 	if(num_layers - 2 > 0)	
-		cblas_sger(CblasRowMajor, layers_size[num_layers - 2], layers_size[num_layers - 1], 1, a[num_layers - 3], 1, delta[num_layers - 2], 1, delC_w[num_layers - 2], layers_size[num_layers - 2]);
+		cblas_sger(CblasRowMajor, layers_size[num_layers - 2], layers_size[num_layers - 1], 1, a[num_layers - 3], 1, delta[num_layers - 2], 1, delC_w[num_layers - 2], layers_size[num_layers - 1]);
 	else
-		cblas_sger(CblasRowMajor, layers_size[num_layers - 2], layers_size[num_layers - 1], 1, x_train[idx], 1, delta[num_layers - 2], 1, delC_w[num_layers - 2], layers_size[num_layers - 2]);
+		cblas_sger(CblasRowMajor, layers_size[num_layers - 2], layers_size[num_layers - 1], 1, x_train[idx], 1, delta[num_layers - 2], 1, delC_w[num_layers - 2], layers_size[num_layers - 1]);
 	for(int i = num_layers - 3; i >= 0; i--)
 	{
 		float *temp = (float *)malloc(layers_size[i+1] * sizeof(float));
 	//	mvProd(w[i+1], delta[i+1], temp, layers_size[i+1], layers_size[i+2]);
-		cblas_sgemv(CblasRowMajor, CblasNoTrans, layers_size[i+1], layers_size[i+2], 1, w[i+1], layers_size[i+1], delta[i+1], 1, 0, temp, 1);
+		cblas_sgemv(CblasRowMajor, CblasNoTrans, layers_size[i+1], layers_size[i+2], 1, w[i+1], layers_size[i+2], delta[i+1], 1, 0, temp, 1);
 		hprod(temp, sigDz[i], delta[i], layers_size[i+1]);
 		add(delC_b[i], delta[i], delC_b[i], layers_size[i+1]);
 		// for( int j = 0; j < layers_size[i]; j++)
 			// for( int k = 0; k < layers_size[i+1]; k++)
 				// delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] ;//+ 2*lambda*w[i][j][k];
 		if(i > 0)	
-			cblas_sger(CblasRowMajor, layers_size[i], layers_size[i+1], 1, a[i-1], 1, delta[i], 1, delC_w[i], layers_size[i]);
+			cblas_sger(CblasRowMajor, layers_size[i], layers_size[i+1], 1, a[i-1], 1, delta[i], 1, delC_w[i], layers_size[i+1]);
 		else
-			cblas_sger(CblasRowMajor, layers_size[i], layers_size[i+1], 1, x_train[idx], 1, delta[i], 1, delC_w[i], layers_size[i]);
+			cblas_sger(CblasRowMajor, layers_size[i], layers_size[i+1], 1, x_train[idx], 1, delta[i], 1, delC_w[i], layers_size[i+1]);
 	}
 	// Timer.lap("secs");
 }
@@ -273,7 +284,7 @@ void train()
 	float entr;
 	initializeGlorot();
 //	ofstream fout("Cost_train.log");
-	double timePerEpoch = 0.0;
+	float timePerEpoch = 0.0;
 	for(int epoch = 0; epoch < nEpochs; epoch++)
 	{
 		Timer.reset();
@@ -290,8 +301,8 @@ void train()
 //		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);			
 //		cout << "\t\tTraining cost = " << entr << endl;		
 //		fout << entr << endl;
-//		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
-//		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
+		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
+		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
 	timePerEpoch /= (nEpochs - 1);
 	cout << "Average time per epoch = " << timePerEpoch << endl;

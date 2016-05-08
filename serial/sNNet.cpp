@@ -28,8 +28,8 @@ float *delC_a, ***delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 4096;
-int nEpochs = 5;
+int miniBatchSize = 128;
+int nEpochs = 50;
 
 void allocate_memory()
 {
@@ -286,8 +286,8 @@ void train()
 //		entr = 	testBatchCost(0, NUM_TRAIN - 1, 1);			
 //		cout << "\t\tTraining cost = " << entr << endl;		
 //		fout << entr << endl;
-//		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
-//		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
+		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
+		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
 	timePerEpoch /= (nEpochs - 1);
 	cout << "Average time per epoch = " << timePerEpoch << endl;
