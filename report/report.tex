@@ -62,10 +62,10 @@
 \begin{abstract}
 
 We present a parallel approach to classification using neural networks as the hypothesis class.
-Neural networks can have millions of parameters and learning the optimum value of all parameters from huge datasets can be very time consuming task, if implemented on a single processor.
+Neural networks can have millions of parameters and learning the optimum value of all parameters from huge datasets can be very time consuming, if implemented on a single processor.
 In this work, we have implemented parallel backpropagation to train Multi Layer Perceptrons (MLPs) for classification tasks. Specifically, we implement a serial backpropagation algorithm and its parallel counterpart with Pthread library in C++.
-We also compare the two implementations with cuda implementation of backpropagation on a GPU and study the parallelization speedup obtained for various network architectures and increasing problem sizes.
-We perform our tests on two benchmark datasets: MNIST and KDD Cup 1999, and finally compare all our implementations with the same implementations done with a state-of-the-art deep learning library: Theano.
+We also compare the two implementations with CUDA implementation of backpropagation on a GPU and study the parallelization speedup obtained for various network architectures and increasing problem sizes.
+We perform our tests on two benchmark datasets: MNIST and KDD Cup 1999, and finally compare all our implementations with the corresponding implementations in the state-of-the-art deep learning library: Theano.
 
 \end{abstract} 
 
