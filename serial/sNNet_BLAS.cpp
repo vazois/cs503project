@@ -49,10 +49,10 @@ float **w, **b, **delta, **a, **z, **sigDz;
 float *delC_a, **delC_w, **delC_b;
 
 float lambda = 1e-3;
-float alpha = 1e-1;
+float alpha = 2e-2;
 
 int miniBatchSize = 128;
-int nEpochs = 50;
+int nEpochs = 500;
 
 void allocate_memory()
 {
