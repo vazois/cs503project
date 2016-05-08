@@ -191,32 +191,19 @@ namespace gnn{
 
 			void printConfig(double tt){
 				unsigned int weights = 0;
-				unsigned batches = 0;
-				unsigned int mem = 0;
-				unsigned int flops = 0,rflops=0;
+				unsigned long rflops=0;
 				for(int i = 0;i < layers-1 ;i++){
 					weights+= network[i].nlayer * network[i].clayer;
-					batches +=  network[i].clayer * bsize;
-
-					rflops+= network[i].nlayer * 2 *network[i].clayer // A(i+1) = W(i) * A(i)
-							+ network[i].nlayer * 2 *network[i].clayer//D(i) = W(i)^T * D(i+1)
-							+ network[i].nlayer * 2 *network[i].clayer + network[i].nlayer //// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
-							+ network[i].nlayer *network[i].clayer; //W(i) = W(i) + Sum(D(i+1) * A(i))
-					flops += network[i].nlayer * 2 *network[i].clayer * bsize // A(i+1) = W(i) * A(i)
-							+ network[i].nlayer * 2 *network[i].clayer * bsize//D(i) = W(i)^T * D(i+1)
-							+ network[i].clayer * bsize + network[i].nlayer * 2 *network[i].clayer * bsize// D(i)  =  D(i) * F.D(W(i-1) * A(i-1))
-							+ bsize * network[i].clayer * network[i].nlayer + network[i].clayer* network[i].nlayer;
+					rflops+= network[i].nlayer * network[i].clayer * 2;
 				}
-				mem +=  weights *  4 + batches * 4;
+				rflops*=  dimEx.first * 5;
 				std::cout<< "Layers: " << layers-1 << std::endl;
-				std::cout<< "Weights: " << weights << std::endl;
-				std::cout<< "Mem Requirements estimate (bytes): " << mem << std::endl;
-				std::cout<< "Mem Requirements (bytes): " << this->mem << std::endl;
+				std::cout<< "Total weight number: " << weights << std::endl;
 				std::cout << "Batch size: " << bsize <<std::endl;
-				//std::cout << "FLOPS: " << flops << std::endl;
-				std::cout << "Elapsed time per training iteration (ms)" << tt <<std::endl;
-				std::cout << "Estimated FLOP: " << rflops * dimEx.first << std::endl;
-				std::cout << "Achieved GFLOPS: " << ((double)(rflops * dimEx.first)/(tt/1000))/(1024*1024*1204) << std::endl;
+				std::cout << "Elapsed time per training iteration (ms): " << tt <<std::endl;
+				std::cout << "Required FLOP per iteration: " << rflops<< std::endl;
+				double GFLOPS = ((double)rflops/(tt/1000))/1000000000;
+				printf( "Achieved GFLOPS: %.f\n",GFLOPS);
 			}
 
 			/*
@@ -256,7 +243,8 @@ namespace gnn{
 		cudaSetDevice(CUDA_DEVICE);
 		IOTools<DATA_T> iot;
 		dimEx = iot.dataDim(file);
-		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		std::cout << "Loading examples from: " << file << std::endl;
+		//std::cout<<dimEx.first << "," << dimEx.second << std::endl;
 		iot.freadFile(hExamples,file,true);
 		allocDevMem<DATA_T>(&dExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error Allocating dExamples memory");
 		safeCpyToDevice<DATA_T>(dExamples,hExamples,sizeof(DATA_T)*dimEx.first*dimEx.second,"Error copying data to dExamples");
@@ -267,7 +255,8 @@ namespace gnn{
 		cudaSetDevice(CUDA_DEVICE);
 		IOTools<DATA_T> iot;
 		dimT = iot.dataDim(file);
-		std::cout<<dimEx.first << "," << dimEx.second << std::endl;
+		std::cout << "Loading test data from: " << file << std::endl;
+		//std::cout<<dimEx.first << "," << dimEx.second << std::endl;
 		iot.freadFile(hTest,file,true);
 		allocDevMem<DATA_T>(&dTest,sizeof(DATA_T)*dimT.first*dimT.second,"Error Allocating dTest memory");
 		safeCpyToDevice<DATA_T>(dTest,hTest,sizeof(DATA_T)*dimT.first*dimT.second,"Error copying data to dTest");

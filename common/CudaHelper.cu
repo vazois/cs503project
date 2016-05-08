@@ -1,8 +1,6 @@
 #include "CudaHelper.h"
 #include "Utils.h"
 
-
-
 template<class V>
 __host__ void printDevData(V *devAddr,unsigned int row, unsigned col){
 	V *hostAddr;

@@ -8,6 +8,26 @@
 #define BSIZE 512
 
 namespace gnn_kernels{
+	static __device__ curandState randDevStates[RAND_STATES];
+
+	__device__ float cudaUniRand(unsigned int tid){
+		return curand_uniform(&randDevStates[tid % RAND_STATES]);
+	}
+
+	__global__ void cudaSetupRandStatesKernel(unsigned int seed){
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+	curand_init(seed, blockIdx.x, 0, &randDevStates[i]);
+	}
+
+	__host__ void cudaInitRandStates(){
+		dim3 grid = grid_1D(RAND_STATES,RAND_BLOCK_THREADS);
+		dim3 block = block_1D(RAND_BLOCK_THREADS);
+
+		Utils<unsigned int> u;
+		cudaSetupRandStatesKernel<<<grid,block>>>(u.uni(UINT_MAX));
+		handleDeviceErrors(cudaDeviceSynchronize(),"Error initializing random states");
+	}
+
 
 	/*
 	 * Testing activation functions on kernels.
@@ -32,7 +52,6 @@ namespace gnn_kernels{
 			if((i+1) % cols == 0){
 				W_j[i] = 0.0;
 			}else{
-				//W_j[i] = cudaUniRand(i);
 				W_j[i] = (2.0 * cudaUniRand(i) - 1.0) * (sqrtf(6.0)/ (rows + cols));
 			}
 		}
@@ -115,9 +134,8 @@ namespace gnn_kernels{
 			else sAj[loadOffset] = 0.0;
 			__syncthreads();
 
-//#pragma unroll
 			for(int j = 0;j < TILE; j++){
-				Ajj = Ajj + sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
+				Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
 			}
 
 			__syncthreads();
@@ -325,7 +343,7 @@ namespace gnn{
 		//std::cout<<"Initializing random weights: "<<std::endl;
 		cudaSetDevice(CUDA_DEVICE);
 
-		cudaInitRandStates();
+		gnn_kernels::cudaInitRandStates();
 		for(int i = 0;i < layers-1;i++){
 			//std::cout<<network[i].clayer << "{}" << network[i].nlayer << std::endl;
 			unsigned int vector_size = network[i].nlayer * network[i].clayer;
@@ -343,22 +361,13 @@ namespace gnn{
 		if(bsize == 0) vz::error("Batch size not set. Use setBatchSize first!");
 		unsigned int nbatch = this->transpose ? dimEx.first / this->bsize : dimEx.second / this->bsize;
 
-		//std::cout<<"nbatch: " << nbatch << std::endl;
-		//for(int i = 0;i < 2;i++){
 		for(int i = 0; i< nbatch; i++){
-			//gnn_data::LayerBatch<DATA_T> batch[0] = batch[0];
 			/*
 			 * Load current batch of training examples.
 			 */
 			unsigned int bRow = i * this->bsize;
-
-			//std::cout<<"(" << i << "): " << bRow <<std::endl;
-			//std::cout <<"A0: (" << batch[0].clayer << "," << batch[0].bsize <<")"<< std::endl;
-			//std::cout <<"bRow: " << bRow << std::endl;
-			//std::cout << "dim: " << dimEx.first<<","<<dimEx.second<<std::endl;
 			dim3 lgrid((batch[0].clayer-1)/LTILE + 1, (batch[0].bsize-1)/LTILE + 1);
 			dim3 lblock(LTILE,LTILE);
-			//print_grid(lgrid,lblock);
 			gnn_kernels::loadT<DATA_T,LTILE><<<lgrid,lblock>>>(
 					batch[0].A_j,dExamples,
 					batch[0].clayer,batch[0].bsize,
@@ -409,7 +418,6 @@ namespace gnn{
 				printf("diff0%d = sum(sum(round(Ejj-Ajj)))\n",j);
 				}
 			}
-			//continue;
 
 			/*
 			 * Output layer Delta computation.
@@ -588,9 +596,7 @@ namespace gnn{
 		DATA_T *Y,*A;
 		allocHostMem<DATA_T>(&Y,sizeof(DATA_T)*this->bsize*batch[layers-1].clayer,"Error allocating mem for Y in classify");
 		allocHostMem<DATA_T>(&A,sizeof(DATA_T)*this->bsize*batch[layers-1].clayer,"Error allocating mem for A in classify");
-		//for(int i = 0;i < 1;i++){
 		for(int i = 0; i< nbatch; i++){
-			//gnn_data::LayerBatch<DATA_T> batch[0] = batch[0];
 			/*
 			 * Load current batch of training examples.
 			 */
@@ -741,7 +747,7 @@ namespace gnn{
 							bsize
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmul");
-			if(!debug) t.lap("GPU mmul elapsed time");
+			t.lap("GPU serial mmul elapsed time");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -794,7 +800,7 @@ namespace gnn{
 					bsize
 			);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tmmul kernel");
-			if(!debug) t.lap("GPU tmmul elapsed time");
+			t.lap("GPU serial tmmul elapsed time");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * clayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -859,7 +865,7 @@ namespace gnn{
 					bsize
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing hmprod_tmmul kernel");
-			t.lap("GPU hmprod mmul");
+			t.lap("GPU serial hmprod elapsed time");
 
 			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
 			safeCpyToHost<DATA_T>(hostA,devA,sizeof(DATA_T)*nlayer*clayer,"Error copying devA to host");
@@ -915,7 +921,7 @@ namespace gnn{
 					0.0231
 					);
 			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing tvecpvec kernel");
-			t.lap("GPU tvecpvec lapsed time");
+			t.lap("GPU serial tvecpvec elapsed time");
 
 			if(debug){
 				//printf("R=");

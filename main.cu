@@ -5,21 +5,6 @@
 
 #include<iostream>
 
-void example_gpu_bench_act(){
-	gnn_actf::Sigmoid gs;
-	gnn_actf::FSigmoid gfs;
-	gnn_actf::Arctan gatan;
-
-	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
-	s.bench_act();
-
-	gnn::GNeuralNetwork<float,gnn_actf::FSigmoid> fs(gfs);
-	fs.bench_act();
-
-	gnn::GNeuralNetwork<float,gnn_actf::Arctan> at(gatan);
-	at.bench_act();
-}
-
 void example00(ArgParser ap){
 	cudaSetDevice(CUDA_DEVICE);
 	gnn_actf::Sigmoid gs;
@@ -103,31 +88,13 @@ void example02(ArgParser ap){
 void example03(ArgParser ap){
 	gnn_actf::Sigmoid gs;
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
-	gnn_actf::FSigmoid fgs;
-	//gnn::GNeuralNetwork<double,gnn_actf::FSigmoid> s(fgs);
 
-	//784 100 10
-	//
-	//s.bench_test_kernels(TMMUL,1112,912,1231, false);
-	//s.bench_test_kernels(TMMUL,3,4,3, true);
-	//s.bench_test_kernels(TMMUL,618,722,356, false);
-	//s.bench_test_kernels(MHPROD,3,5,4, true);
-	//s.bench_test_kernels(TVECPVEC,457,632,710,false);
-	//s.bench_test_kernels(MMUL,3,4,2,true);
-
-	//s.bench_test_kernels(MMUL,3,5,7,true);
-	//s.bench_test_kernels(TMMUL,3,5,4,true);
-	//s.bench_test_kernels(MHPROD,3,5,4, true);
-
-	Time<millis> t;
-	t.start();
 	for(int i =0 ;i<1;i++){
 		s.bench_test_kernels(MMUL,2048,2048,2048,false);
 		s.bench_test_kernels(TMMUL,2048,2048,2048,false);
 		s.bench_test_kernels(MHPROD,2048,2048,2048, false);
 		s.bench_test_kernels(TVECPVEC,2048,2048,2048,false);
 	}
-	t.lap();
 }
 
 void example04(ArgParser ap){
@@ -151,9 +118,6 @@ void example04(ArgParser ap){
 	unsigned int iterations = ap.exists(IARG) ? ap.getUint(IARG) : 50 ;
 	unsigned int b = ap.exists(BARG) ? ap.getUint(BARG) : 100 ;
 	float r = ap.exists(DARG) ? ap.getFloat(DARG) : 0.1 ;
-	std::cout<<"i:" << iterations << std::endl;
-	std::cout<<"b:" << b << std::endl;
-	std::cout<<"r:" << r << std::endl;
 
 	s.setBatchSize(b);
 	s.useTranspose(true);
@@ -169,7 +133,7 @@ void example04(ArgParser ap){
 	t.start();
 	std::cout<<"Computing Classification Accuracy..." << std::endl;
 	s.classify();
-	t.lap("Classification Elapsed Time");
+	t.lap("Classification Elapsed Time (ms)");
 }
 
 void example05(ArgParser ap){
@@ -221,7 +185,8 @@ int main(int argc, char **argv){
 	//example00(ap);
 	//example01(ap);
 	//example02(ap);
-	//example03(ap);
-	example04(ap);
-	//example05(ap);
+	int mode = ap.exists(MDARG) ? ap.getUint(MDARG) : 0 ;
+	if(mode == 0) example03(ap);
+	else if(mode==1) example04(ap);
+	else if(mode==2) example05(ap);
 }
