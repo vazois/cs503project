@@ -1,6 +1,49 @@
 \section{Serial and Parallel Backpropagation}
 \label{BackProp}
 
+As explained in section \ref{ClassProb}. classifiers try to choose their parameters ($\theta$) in order to minimize some pre-specified loss function.
+In this work, we will work with the Mean-squared Error loss function as defined in equation \ref{LMSE}.
+
+\subsection{Gradient Descent}
+\label{GD}
+
+To optimize the loss function, we will use the Gradient Descent algorithm which in its most basic form takes the derivative of the cost function w.r.t. all the parameter values and updates the parameters by a value proportional to this gradient and opposite in sign.
+In its most basic form the Gradient Descent algorithm takes the form shown in algorithm \ref{alg:GradDesc}.
+\begin{algorithm}[tb]
+   \caption{Gradient Descent}
+   \label{alg:GradDesc}
+\begin{algorithmic}
+   \STATE {\bfseries Input:} data $x_i$, size $m$
+   \REPEAT
+   \STATE Initialize $noChange = true$.
+   \FOR{$i=1$ {\bfseries to} $m-1$}
+   \IF{$x_i > x_{i+1}$} 
+   \STATE Swap $x_i$ and $x_{i+1}$
+   \STATE $noChange = false$
+   \ENDIF
+   \ENDFOR
+   \UNTIL{$noChange$ is $true$}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{enumerate}
+\item Initialize all weights $(\theta)$ randomly with small values close to 0.
+\item Repeat until convergence \{
+\begin{equation*}
+\theta_k := \theta_k - \alpha \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \hspace{16pt} \forall k \in \{1,2,...,K\}
+\end{equation*}
+\}
+\end{enumerate}
+Note that the derivative of the loss function generally takes the following form:
+\begin{equation*}
+\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} = \frac{1}{N} \sum_{i=1}^N ( y_i - f(x_i; \theta)) \frac{\partial f(x_i; \theta)}{\partial \theta_k}
+\end{equation*}
+Since this requires a summation over all the training examples, the gradient computation is the biggest bottleneck for many supervised learning tasks on huge data sets.
+
+On the other hand, having the gradient as a sum of partial gradients with respect to individual training examples opens up the possibility of parallelizing the gradient computation efficiently.
+This can be done by distributing training examples across various processors/machines and letting them compute a partial gradient over their own training examples and then summing up these partial gradients to get the actual gradient.
+A good approximation of this process can be obtained by using a mini-batch of training examples per iteration, instead of using the full dataset.
+
 Describe backpropagation serial implementation in detail
 
 Describe platform used \\

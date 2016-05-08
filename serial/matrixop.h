@@ -17,6 +17,10 @@ void sigmoid(float *x, float *y, int n);
 
 void dSigmoid(float *x, float *y, int n);
 
+void fastSigmoid(float *x, float *y, int n);
+
+void dfastSigmoid(float *x, float *y, int n);
+
 void softmax(float *x, float *y, int n);
 
 void softmaxD(float *x, float *y, int n);

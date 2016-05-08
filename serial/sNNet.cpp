@@ -28,7 +28,7 @@ float *delC_a, ***delC_w, **delC_b;
 float lambda = 1e-3;
 float alpha = 1e-1;
 
-int miniBatchSize = 512;
+int miniBatchSize = 4096;
 int nEpochs = 5;
 
 void allocate_memory()
@@ -88,6 +88,8 @@ void initializeGlorot()
 
 void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data set
 {
+	Time<secs> Timer;
+	Timer.reset();
 	switch(dataset_type)
 	{
 		case 1: mvProdT(w[0], x_train[idx], z[0], layers_size[0], layers_size[1]);
@@ -108,6 +110,7 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 		sigmoid(z[i], a[i], layers_size[i+1]);
 		dSigmoid(z[i], sigDz[i], layers_size[i+1]);
 	}
+//	Timer.lap("secs");
 	// Add the softmax layer
 	// mvProdT(w[i], a[i - 1], z[i], layers_size[i], layers_size[i+1]);
 	// add(z[i], b[i], z[i], layers_size[i+1]);
@@ -117,6 +120,8 @@ void forwardPass(int idx, int dataset_type)// Idx is the sample idx in the data 
 
 void backwardPass(int idx)
 {
+	Time<secs> Timer;
+	Timer.reset();
 	costFnLMSD(y_train[idx], a[num_layers - 2], delC_a, layers_size[num_layers - 1]);
 	hprod(delC_a, sigDz[num_layers - 2], delta[num_layers - 2], layers_size[num_layers - 1]);
 	add(delC_b[num_layers - 2], delta[num_layers - 2], delC_b[num_layers - 2], layers_size[num_layers - 1]);
@@ -133,10 +138,13 @@ void backwardPass(int idx)
 			for( int k = 0; k < layers_size[i+1]; k++)
 				delC_w[i][j][k] += ((i > 0) ? a[i-1][j] : x_train[idx][j])*delta[i][k] ;//+ 2*lambda*w[i][j][k];
 	}
+	// Timer.lap("secs");
 }
 
 void initDeriv()
 {
+	Time<secs> Timer;
+	Timer.reset();
 	for(int i = 0; i < num_layers - 1; i++)
 		for(int j = 0; j < layers_size[i+1]; j++)
 			delC_b[i][j] = 0;
@@ -144,6 +152,7 @@ void initDeriv()
 		for(int j = 0; j < layers_size[i]; j++)
 			for(int k = 0; k < layers_size[i+1]; k++)
 				delC_w[i][j][k] = 0;
+	// Timer.lap("secs");
 }
 
 void updateStochastic(int idx, int dataset_type)
@@ -280,7 +289,7 @@ void train()
 //		accuracy = testBatchAccuracy(0, NUM_VAL - 1, 2);
 //		cout << "\t\tValidation accuracy = " << accuracy*100 << "%" << endl;
 	}
-	timePerEpoch /= nEpochs;
+	timePerEpoch /= (nEpochs - 1);
 	cout << "Average time per epoch = " << timePerEpoch << endl;
 //	fout.close();
 }

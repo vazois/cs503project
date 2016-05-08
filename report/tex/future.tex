@@ -1,4 +1,11 @@
-\section{Future Work}
+\section{Conclusion and Future Work}
 \label{Future}
 
-Discuss application of parallel training and future usage of this work
+In this paper, we have explored a technique to parallelize training of multilayer feedforward neural networks by splitting the training examples among multiple threads of execution.
+We have obtained significant performance gains by parallelizing the training process both by using multiple cores and also on a GPU. We have demonstrated a -x times speedup using multiple cores only and then a -x times speedup using a GPU without any significant loss of accuracy.
+Our parallelized backpropagation implementation can find good usage for many real-time processing tasks. Typical examples include but are not limited to:
+\begin{itemize}
+\item Real-time online control of robotic manipulators which learn online from incoming sensory data.
+\item Self-driving cars which need to do online object recognition in real-time using deep neural networks.
+\item Speech translators which deploy deep recurrent neural networks for translation in real-time.
+\end{itemize} 

@@ -74,6 +74,19 @@ void dSigmoid(float *x, float *y, int n)
 	}
 }
 
+void fastSigmoid(float *x, float *y, int n)
+{
+	for(int i = 0; i < n; i++)
+		y[i] = x[i]/(1 + std::abs(x[i]));;
+}
+
+void dfastSigmoid(float *x, float *y, int n)
+{
+	float temp = 0;
+	for(int i = 0; i < n; i++)
+		y[i] = 1/pow(1 + std::abs(x[i]),2);
+}
+
 void softmax(float *x, float *y, int n)
 {
 	float sum = 0;
