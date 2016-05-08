@@ -21,7 +21,17 @@ We will describe gradient descent in section \ref{GD}.
 \subsection{Feedforward Neural Networks}
 \label{sub:FNN}
 
-The basic unit of feedforward neural networks is a neuron. A single neuron generally takes a vector of inputs $x \in \mathbb{R}^n$ and outputs a single scalar $a \in \mathbb{R}$ (called its activation). Generally the function computed by a neuron comprises of linear transformation on the input vector followed by a pointwise non-linear activation function:
+\begin{figure}[ht]
+%\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{neuron.png}}
+\caption{A neuron}
+\label{fig:neuron}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+The basic unit of feedforward neural networks is a neuron (figure \ref{neuron}). A single neuron generally takes a vector of inputs $x \in \mathbb{R}^n$ and outputs a single scalar $a \in \mathbb{R}$ (called its activation). Generally the function computed by a neuron comprises of linear transformation on the input vector followed by a pointwise non-linear activation function:
 \begin{align}
 a = f(w^T x + b)
 \end{align}
@@ -31,11 +41,11 @@ Many different kinds of activation functions have been studied and used accordin
 \begin{figure}[ht]
 %\vskip 0.2in
 \begin{center}
-\centerline{\includegraphics[width=\columnwidth]{sigmoid}}
+\centerline{\includegraphics[width=0.7\columnwidth]{sigmoid.pdf}}
 \caption{The sigmoid function}
 \label{fig:sigmoid}
 \end{center}
-\vskip -0.4in
+\vskip -0.2in
 \end{figure}
 
 The sigmoid function is shown in figure \ref{fig:sigmoid} and is defined as follows:
@@ -46,7 +56,18 @@ A feedforward neural network is a directed acyclic graph $G = (V,E)$ each of who
 
 A feedforward network with $L$ layers comprises of a single input layer, $L-2$ hidden layers (their outputs are not directly observed) and a final output layer.
 Let the input of the neural network be $x \in \mathbb{R}^{n_{in}}$ and the output be $y \in \mathbb{R}^{n_{out}}$.
-The $l^{th}$ layer has $n_l$ neurons and the full network has $n = \sum_{l=1}^L n_l$ neurons.
+The $l^{th}$ layer has $n_l$ neurons and the full network has $n = \sum_{l=1}^L n_l$ neurons. 
+An example network is shown in figure \ref{fig:nnet}.
+
+\begin{figure}[ht]
+%\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{nnet.png}}
+\caption{A neural network with one hidden layer}
+\label{fig:nnet}
+\end{center}
+\vskip -0.2in
+\end{figure}
 
 The input to the first layer (denoted $x_1$) is $x$ and the output (activation) of the first layer is denoted $a_1 \in \mathbb{R}^{n_{in}}$. The input layer contains $n_1 = n_{in}$ dummy neurons each of which takes a single scalar input $n_{in}$ and passes it as it is i.e. $a_1 = x_1 = x$.
 
