@@ -53,7 +53,7 @@ The input to the first layer (denoted $x_1$) is $x$ and the output (activation) 
 All subsequent layers $l \in \{2,3,...,L\}$ give an output $a_l \in \mathbb{R}^{n_{l}}$ and take an input $x_l = a_{l-1} \in \mathbb{R}^{n_{l-1}}$. The final network output $y$ is given by $a_L \in \mathbb{R}^{n_L} (n_L = n_{out})$.
 Each of these layers applies a linear transformation to its input followed by a pointwise non-linear activation function i.e. for each layer:
 \begin{align}
-z_l &= (W^l)^T x_l + b_l \\
+z_l &= (W_l)^T x_l + b_l \\
 a_l &= f(z_l)
 \end{align}
 where $W^l \in \mathbb{R}^{n_{l-1} \times n_l}$ is the weight matrix of the layer and $b_l \in \mathbb{R}^{n_l}$ is the bias vector. The function $f(\cdot)$ is the pointwise activation function which applies to each component of the $z_l$ vector and we will use sigmoid as our activation function for the classification task.

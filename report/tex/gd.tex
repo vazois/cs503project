@@ -80,11 +80,11 @@ We use this to parallelize the gradient computation as shown in algorithm \ref{a
    \STATE Divide $B_j$ into thread-batches $\{B_{jt}\}_{t=1:\frac{B}{T}}$ of size $\frac{B}{T}$
    \STATE \textbf{Thread `t' is forked:}
    \FOR {$k \in \{1:K\}$}
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t = \sum_{i \in B_{jt}} ( y^{(i)} - f(x^{(i)}; \theta)) \frac{\partial f(x^{(i)}; \theta)}{\partial \theta_k}$
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t := \sum_{i \in B_{jt}} ( y^{(i)} - f(x^{(i)}; \theta)) \frac{\partial f(x^{(i)}; \theta)}{\partial \theta_k}$
    \ENDFOR
    \STATE \textbf{Thread `t' joins back 'main'}
    \FOR {$k \in \{1:K\}$}
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} = \frac{1}{B} \sum_t \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t$
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} := \frac{1}{B} \sum_t \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t$
    \ENDFOR
    \STATE $\theta_k := \theta_k - \alpha \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \hspace{16pt} \forall k \in \{1:K\}$
    \ENDFOR
@@ -98,28 +98,42 @@ We use this to parallelize the gradient computation as shown in algorithm \ref{a
 It can be seen that a major subroutine in algorithms \ref{alg:BGD}, \ref{alg:MGD} and \ref{alg:PMGD} is the computation of gradient of the loss function for a single training example.
 
 Since the neural network is a very complicated function comprising of many layered operations, the gradient of loss function is not trivial to compute.
-For fully connected feedforward neural networks, the gradient is computed by starting from the output layer and backpropagating gradient information for previous layers using the derivative chain-rule.
+For fully connected feedforward neural networks, first a forward pass is made to compute the value of neural network activations for all layers as shown in algorithm \ref{alg:FwdPass}. Then the gradient is computed by starting from the output layer and backpropagating gradient information for previous layers using the derivative chain-rule.
 
 This procedure results in the famous \textit{backpropagation} algorithm to compute the gradient described briefly as follows:
-Let $x$ be a training example with label $y$. Our feedforward neural network has an input layer and $L-1$ fully connected layers with sigmoid activation function. The parameters $\theta$ are all the neural network parameters i.e. $\theta = [W_{\{1:L\}}, b_{\{1:L\}}]$. We will use the Mean-Squared Error loss function:
+Let $x$ be a training example with label $y$. Our feedforward neural network has an input layer and $L-1$ fully connected layers with sigmoid activation function. The parameters $\theta$ are all the neural network parameters i.e. $\theta = [W_{\{2:L\}}, b_{\{2:L\}}]$. We will use the Mean-Squared Error loss function:
 \begin{align}
-\mathcal{L}_{MSE} ([W_{\{1:L\}}, b_{\{1:L\}}]) = \frac{1}{N} \sum_{i=1}^N ( y - a_L(x))^2
+\mathcal{L}_{MSE} ([W_{\{2:L\}}, b_{\{2:L\}}]) = \frac{1}{N} \sum_{i=1}^N ( y - a_L(x))^2
 \end{align}
-where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$ and the network parameters are $[W_{\{1:L\}}, b_{\{1:L\}}]$.
-The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp}.
+where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$ and the network parameters are $[W_{\{2:L\}}, b_{\{2:L\}}]$.
+The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp}. Note that $a \circ b$ is the elementwise product between vectors $a$ and $b$.
+\begin{algorithm}[tb]
+   \caption{Forward Pass}
+   \label{alg:FwdPass}
+\begin{algorithmic}
+   \STATE {\bfseries Input:} Example $x$, parameters $[W_{\{2:L\}}, b_{\{2:L\}}]$
+   \STATE {\bfseries Output:} $z_l(x), a_l(x) \hspace{16pt} \forall l=1:L$
+   \STATE
+   \STATE $z_1(x) := x, a_1(x) := x$
+   \FOR {$l=2:L$}
+   \STATE $z_l(x) = (W_l)^T a_{l-1}(x) + b_l$
+   \STATE $a_l(x) = \sigma(z_l)$
+   \ENDFOR
+\end{algorithmic}
+\end{algorithm}
 \begin{algorithm}[tb]
    \caption{Backpropagation}
    \label{alg:BackProp}
 \begin{algorithmic}
-   \STATE {\bfseries Input:} Example $x$, label $y$, parameters $[W_{\{1:L\}}, b_{\{1:L\}}]$
-   \STATE {\bfseries Output:} Derivatives $\{\frac{\partial \mathcal{L}_{MSE}}{\partial b_l}\}_{l=1:L}, \{\frac{\partial \mathcal{L}_{MSE}}{\partial W_l}\}_{l=1:L}$
+   \STATE {\bfseries Input:} Example $x$, label $y$, parameters $[W_{\{2:L\}}, b_{\{2:L\}}]$
+   \STATE {\bfseries Output:} Derivatives $\{\frac{\partial \mathcal{L}_{MSE}}{\partial b_l}\}_{l=2:L}, \{\frac{\partial \mathcal{L}_{MSE}}{\partial W_l}\}_{l=2:L}$
    \STATE
-   \STATE Compute $z_l(x) \text{ and } a_l(x) \hspace{4pt} \forall l=1:L$ with a forward pass
+   \STATE Compute $z_l(x), a_l(x) \hspace{4pt} \forall l=1:L$ with a forward pass
    \STATE $\delta_L := \frac{\partial \mathcal{L}_{MSE}}{\partial a_L} \circ \sigma'(z_L(x))$
-   \STATE $\delta_l := (W_{l+1} \delta_{l+1}) \circ \sigma'(z_l(x)) \hspace{16pt} \forall l=L-1:1$
-   \FOR {$l=1:L$}
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial b_l} = \delta_l$
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial W_l} = a_{l-1} \delta_l^T$
+   \FOR {$l=L:2$}
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial b_l} := \delta_l$
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial W_l} := a_{l-1} \delta_l^T$
+   \STATE $\delta_{l-1} := (W_l \delta_l) \circ \sigma'(z_{l-1}(x))$
    \ENDFOR
 \end{algorithmic}
 \end{algorithm}
