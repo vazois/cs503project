@@ -1,7 +1,31 @@
 \section{Serial and Parallel Backpropagation}
 \label{BackProp}
 
-which in its most naive form is implemented as follows:
+As explained in section \ref{ClassProb}. classifiers try to choose their parameters ($\theta$) in order to minimize some pre-specified loss function.
+In this work, we will work with the Mean-squared Error loss function as defined in equation \ref{LMSE}.
+
+\subsection{Gradient Descent}
+\label{GD}
+
+To optimize the loss function, we will use the Gradient Descent algorithm which in its most basic form takes the derivative of the cost function w.r.t. all the parameter values and updates the parameters by a value proportional to this gradient and opposite in sign.
+In its most basic form the Gradient Descent algorithm takes the form shown in algorithm \ref{alg:GradDesc}.
+\begin{algorithm}[tb]
+   \caption{Gradient Descent}
+   \label{alg:GradDesc}
+\begin{algorithmic}
+   \STATE {\bfseries Input:} data $x_i$, size $m$
+   \REPEAT
+   \STATE Initialize $noChange = true$.
+   \FOR{$i=1$ {\bfseries to} $m-1$}
+   \IF{$x_i > x_{i+1}$} 
+   \STATE Swap $x_i$ and $x_{i+1}$
+   \STATE $noChange = false$
+   \ENDIF
+   \ENDFOR
+   \UNTIL{$noChange$ is $true$}
+\end{algorithmic}
+\end{algorithm}
+
 \begin{enumerate}
 \item Initialize all weights $(\theta)$ randomly with small values close to 0.
 \item Repeat until convergence \{
