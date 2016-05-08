@@ -25,11 +25,22 @@ a = f(w^T x + b)
 \end{align}
 where $w \in \mathbb{R}^n$ is called the weight vector and $b \in \mathbb{R}$ is the scalar bias of the neuron.
 Many different kinds of activation functions have been studied and used according to the task at hand e.g. linear, sigmoid, tanh, ReLU etc. We will use the sigmoid and linear$(f(z) = z)$ activation functions in our implementation.
-The sigmoid function is defined as follows:
+
+\begin{figure}[ht]
+%\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{sigmoid}}
+\caption{The sigmoid function}
+\label{sigmoid}
+\end{center}
+\vskip -0.4in
+\end{figure}
+
+The sigmoid function is shown in figure \ref{sigmoid} and is defined as follows:
 \begin{align}
 f(z) = \frac{1}{1 + e^{-z}}
 \end{align}
-A feedforward neural network is a directed acyclic graph $G = (V,E)$ each of whose vertices $v \in V$ is a neuron and every edge $(u,v) \in E$ represents the output of neuron $u$ going as an input to neuron $v$. In general to have a more concrete structure the graph $G$ is organized into a layered structure and we will only use layered feedforward neural networks in our implementations.
+A feedforward neural network is a directed acyclic graph $G = (V,E)$ each of whose vertices $v \in V$ is a neuron and every edge $(u,v) \in E$ represents the output of neuron $u$ going as an input to neuron $v$. In general to have a more concrete structure the graph $G$ is organized into a layered structure and we will only use layered feedforward neural networks in our implementations. 
 
 A feedforward network with $L$ layers comprises of a single input layer, $L-2$ hidden layers (their outputs are not directly observed) and a final output layer.
 Let the input of the neural network be $x \in \mathbb{R}^{n_{in}}$ and the output be $y \in \mathbb{R}^{n_{out}}$.
