@@ -101,8 +101,25 @@ Since the neural network is a very complicated function comprising of many layer
 For fully connected feedforward neural networks, the gradient is computed by starting from the output layer and backpropagating gradient information for previous layers using the derivative chain-rule.
 
 This procedure results in the famous \textit{backpropagation} algorithm to compute the gradient described briefly as follows:
-Let $x$ be a training example with label $y$. Our feedforward neural network has an input layer and $L-1$ fully connected layers with sigmoid activation function. The parameters $\theta$ are all the neural network parameters i.e. $\theta = [W_{1:L}, b_{1:L}]$. We will use the Mean-Squared Error loss function:
+Let $x$ be a training example with label $y$. Our feedforward neural network has an input layer and $L-1$ fully connected layers with sigmoid activation function. The parameters $\theta$ are all the neural network parameters i.e. $\theta = [W_{\{1:L\}}, b_{\{1:L\}}]$. We will use the Mean-Squared Error loss function:
 \begin{align}
-\mathcal{L}_{MSE} ([W_{1:L}, b_{1:L}]) = \frac{1}{N}\sum_{i=1}^N ( y - a_L(x)}; [W_{1:L}, b_{1:L}]))^2
+\mathcal{L}_{MSE} ([W_{\{1:L\}}, b_{\{1:L\}}]) = \frac{1}{N} \sum_{i=1}^N ( y - a_L(x))^2
 \end{align}
-where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$.
+where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$ and the network parameters are $[W_{\{1:L\}}, b_{\{1:L\}}]$.
+The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp}.
+\begin{algorithm}[tb]
+   \caption{Backpropagation}
+   \label{alg:BackProp}
+\begin{algorithmic}
+   \STATE {\bfseries Input:} Example $x$, label $y$, parameters $[W_{\{1:L\}}, b_{\{1:L\}}]$
+   \STATE {\bfseries Output:} Derivatives $\{\frac{\partial \mathcal{L}_{MSE}}{\partial b_l}\}_{l=1:L}, \{\frac{\partial \mathcal{L}_{MSE}}{\partial W_l}\}_{l=1:L}$
+   \STATE
+   \STATE Compute $z_l(x) \text{ and } a_l(x) \hspace{4pt} \forall l=1:L$ with a forward pass
+   \STATE $\delta_L := \frac{\partial \mathcal{L}_{MSE}}{\partial a_L} \circ \sigma'(z_L(x))$
+   \STATE $\delta_l := (W_{l+1} \delta_{l+1}) \circ \sigma'(z_l(x)) \hspace{16pt} \forall l=L-1:1$
+   \FOR {$l=1:L$}
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial b_l} = \delta_l$
+   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial W_l} = a_{l-1} \delta_l^T$
+   \ENDFOR
+\end{algorithmic}
+\end{algorithm}

@@ -14,7 +14,7 @@
 #include <sstream>
 
 //#include "blaio.h"
-// #include "cblas.h"
+#include "cblas.h"
 
 
 
@@ -24,10 +24,10 @@
 #include "matrixop.h"
 #include "datalib.h"
 
-extern "C"
-{
-       #include <cblas.h>
-}
+// extern "C"
+// {
+//        #include <cblas.h>
+// }
 
 
 using namespace std;
