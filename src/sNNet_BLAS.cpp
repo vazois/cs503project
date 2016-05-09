@@ -52,7 +52,7 @@ float lambda = 1e-3;
 float alpha = 2e-2;
 
 int miniBatchSize = 128;
-int nEpochs = 500;
+int nEpochs = 50;
 
 void allocate_memory()
 {

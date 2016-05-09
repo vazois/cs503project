@@ -31,7 +31,7 @@ float lambda = 1e-3;
 float alpha = 1e-1;
 
 int miniBatchSize = 128;
-int nEpochs = 5;
+int nEpochs = 50;
 float accur[NUM_THREADS];
 
 
