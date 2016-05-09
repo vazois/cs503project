@@ -10,7 +10,6 @@
 
 enum UnitTest{
 		MMUL,//MATRIX MULTIPLICATION
-		BMMUL,//BATCH MATRIX MULTIPLICATION
 		TMMUL,//TRANSPOSE MATRIX MULTIPLICATION
 		OUTDM,//OUTPUT DELTA COMPUTATION
 		MHPROD,//MATRIX HADAMARD PRODUCT
@@ -22,6 +21,7 @@ enum UnitTest{
 #define RANDOM 2
 #define DEBUG_GNN false
 #define DEBUG_T false
+#define SIGMOID_ENABLED false
 
 namespace gnn_actf{
 	struct Sigmoid{

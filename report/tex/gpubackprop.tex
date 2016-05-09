@@ -1,11 +1,31 @@
 \section{Implementing BackPropagation on GPU}
 \label{GPUBackProp}
 
-Graphics Processing Units (GPUs) are massively parallel processors that were designed for efficient computer graphics rendering and image processing. In fact, GPUs are very effective when used to execute the graphics rendering pipeline which is a sequence of geometric transformations on small multidimensional vectors. For this reason, GPUs are suitable for executing very fast certain linear algebra operations including but not limited to vector-vector addition, matrix-vector and matrix-matrix multiplication. Moreover, because GPUs consist of many throughput oriented multiprocessors that follow the Single Instruction Multiple Data (SIMD) execution model, they can be very useful for applications that require processing and transformation operations on large dataset.
+Graphics Processing Units (GPUs) are massively parallel processors that were designed for efficient computer graphics rendering and image processing. In fact, GPUs are very effective when used to execute the graphics rendering pipeline which is a sequence of geometric transformations on small multidimensional vectors. For this reason, GPUs are suitable for executing very fast certain linear algebra operations including but not limited to vector-vector addition, matrix-vector and matrix-matrix multiplication. Moreover, because GPUs consist of many throughput oriented multiprocessors that follow the Single Instruction Multiple Data (SIMD) execution model, they can be very useful for applications that require processing large amount of data.
+
+\begin{figure}[ht]
+%\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{gpu_neural_net_data}}
+\caption{Abstract layered neural network architecture}
+\label{fig:nn_architecture}
+\end{center}
+\vskip -0.2in
+\end{figure}
 
 Training neural networks is a process that can be realized through a series of matrix-matrix multiplications and additions which are applied for a large number of training examples. Every neural network can be defined and operated on by following this abstraction. Back propagation can be implemented as a series of kernel executions that are combined to ultimately compute the change in the weight values caused by the corresponding training batch. In our implementation, a neural network is viewed as a collection of layers, each one consisting of 3 distinct matrices. These matrices store the outgoing weight values $W_i$, the incoming activation values $A_i$ and the delta error values $D_i$ computed by back propagation. The activation values of the input layer (i.e. $A_0$) are the actual training examples in the corresponding batch. The activation values and the delta error values are stored in column-major order. In contrast the weights for each layer are stored in row-major order. The bias values are embedded in the last column of the weight matrix.
 
-We decompose back-propagation into 5 steps each one implemented by distinct kernel. The first step, handles the feed forward activation by implementing a tiled matrix-matrix multiplication based on Eq.~\ref{act_kernel}. Here we denote with $f$ the preferred activation function which is usually the sigmoid function. Our implementation is designed around templates and supports user defined activation functions. The feed-forward step is implemented using the tiled matrix-matrix multiplication as it is described in \cite{}. All threads participate in loading the tiles of the input matrices into shared memory. The threads use registers to accumulate partial results. After parsing the complete matrix each thread applies the activation function on the resulting value before storing it into global memory. All read and write operations to global memory are coalesced and there are no bank conflicts because thread iterate over the secondary matrix dimension in each case. An additional step is required to initialize the thread registers with the bias values.
+\begin{figure}[ht]
+%\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{gpu_data_layout}}
+\caption{Matrix data layout}
+\label{fig:data_layout}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+We decompose back-propagation into 5 steps each one implemented by distinct kernel. The first step, handles the feed forward activation by implementing a tiled matrix-matrix multiplication based on Eq.~\ref{act_kernel}. Here we denote with $f$ the preferred activation function which is usually the sigmoid function. Our implementation is designed around templates and supports user defined activation functions. The feed-forward step is implemented using the tiled matrix-matrix multiplication as it is described in CUDA samples. All threads participate in loading the tiles of the input matrices into shared memory. The threads use registers to accumulate partial results. After parsing the complete matrix each thread applies the activation function on the resulting value before storing it into global memory. All read and write operations to global memory are coalesced and there are no bank conflicts because thread iterate over the secondary matrix dimension in each case. An additional step is required to initialize the thread registers with the bias values.
 
 \begin{equation}\label{act_kernel}
 A_{i+1} = f\left(W_{i} \cdot A_{i} + b_i\right), \forall i \in \left[1,L-1\right]
