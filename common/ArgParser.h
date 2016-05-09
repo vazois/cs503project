@@ -22,6 +22,10 @@ const static std::string TARG="-t";
 const static std::string DPT="-pt";//DATA PER THREAD// CUDA ONLY
 const static std::string BARG="-b";
 const static std::string IARG="-i";
+const static std::string F1ARG="-f1";
+const static std::string F2ARG="-f2";
+const static std::string INARG="-in";
+const static std::string ONARG="-on";
 
 const static std::string DARG_H="data dimensionality.";
 const static std::string CARG_H="data cardinality.";
@@ -29,10 +33,18 @@ const static std::string MAXARG_H="maximum for random number generation.";
 const static std::string MINARG_H="minimum for random number generation.";
 const static std::string FIARG_H="input filename (comma separated).";
 const static std::string FOARG_H="output filename (comma separated).";
-const static std::string MDARG_H="execution mode (application specific i.e. 0,1,2 ...).";
+//const static std::string MDARG_H="execution mode (application specific i.e. 0,1,2 ...).";
 const static std::string HELP_H="print this help menu.";
 const static std::string DPT_H="specify the number of elements each cuda thread is responsible for processing";
 const static std::string TARG_H="number of threads(in a block for cuda).";
+
+const static std::string F1ARG_H = "train dataset file";
+const static std::string F2ARG_H = "test dataset file";
+const static std::string IARG_H = "Number of iterations";
+const static std::string BARG_H = "Batch size";
+const static std::string MDARG_H= "Execution mode ,0- benchmark kernels, 1- train neural network 1, 2- train neural network 2.";
+const static std::string INARG_H= "input neuron number ( input neuron + output neuron = number of values in row)";
+const static std::string ONARG_H= "output neuron number ( input neuron + output neuron = number of values in row)";
 
 class ArgParser{
 public:
@@ -121,7 +133,7 @@ std::string ArgParser::mysetw(int spaces,int width){
 
 void ArgParser::menu(){
 	std::cout<<"<<<Execution Guidelines>>>"<<std::endl;
-	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<DARG<<this->mysetw(UI_MIDDLE_SPACES,2)<<DARG_H<<std::endl;
+	/*std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<DARG<<this->mysetw(UI_MIDDLE_SPACES,2)<<DARG_H<<std::endl;
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<CARG<<this->mysetw(UI_MIDDLE_SPACES,2)<<CARG_H<<std::endl;
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<MAXARG<<this->mysetw(UI_MIDDLE_SPACES,4)<<MAXARG_H<<std::endl;
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<MINARG<<this->mysetw(UI_MIDDLE_SPACES,4)<<MINARG_H<<std::endl;
@@ -129,7 +141,15 @@ void ArgParser::menu(){
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<FOARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<FOARG_H<<std::endl;
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<MDARG<<this->mysetw(UI_MIDDLE_SPACES,2)<<MDARG_H<<std::endl;
 	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<DPT<<this->mysetw(UI_MIDDLE_SPACES,2)<<DPT_H<<std::endl;
-	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<HELP<<this->mysetw(UI_MIDDLE_SPACES,2)<<HELP_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<HELP<<this->mysetw(UI_MIDDLE_SPACES,2)<<HELP_H<<std::endl;*/
+
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<MDARG<<this->mysetw(UI_MIDDLE_SPACES,2)<<MDARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<F1ARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<F1ARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<F2ARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<F2ARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<IARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<IARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<BARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<BARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<ONARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<ONARG_H<<std::endl;
+	std::cout<<this->mysetw(UI_FRONT_SPACES,0)<<INARG<<this->mysetw(UI_MIDDLE_SPACES,3)<<INARG_H<<std::endl;
 }
 
 #endif
