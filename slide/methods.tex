@@ -27,7 +27,7 @@ memory is implicit.}
 
 \begin{itemize}
 
-\item{ Neural Network Training Steps }
+\item{ Neural Network Training Process}
 \begin{itemize}
 \item{\textbf{Forward propagation:}  \\$A_{i+1} = f(W_{i} \cdot A_{i})$}
 \item{\textbf{Back propagation:}  \\$D_L =Y - A_L$,\\ $D_i = (W_{i})^{T}\cdot D_{i+1} \circ d(W_{i-1} \cdot A_{i-1})$}
@@ -42,40 +42,60 @@ memory is implicit.}
 
 \end{frame}
 
-\begin{frame}{GPU Implementation Details}
+\begin{frame}{GPU Implementation Overview}
 \begin{itemize}
 \item{Training Kernels}
 \begin{itemize}
-\item{ Variants of tiled matrix multiplication }
-\item{ Each thread is responsible for computing a single matrix cell }
-\item{ On-chip memory for amplifying }
+\item{ Based on variants of tiled matrix multiplication }
+\item{ Each thread responsible for computing a single matrix cell }
+\item{ Elements are loaded into shared memory to enable data re-use }
 \end{itemize}
 
 \includegraphics[width=2.0in]{matrix-multiplication-with-shared-memory.png}
 
+\end{itemize}
+\end{frame}
 
+\begin{frame}{Data Organization \& Access}
+\begin{itemize}
+
+\item{Data Layout}
+\begin{itemize}
+	\item{Weight matrix is stored in row-major order}
+	\item{Everything else in column-major order}
+	\includegraphics[width=2.4in]{gpu_data_layout.png}
+\end{itemize}
+
+\item{Global Memory Access}
+\begin{itemize}
+	\item{Iterate over the secondary dimension}
+	\item{Row-Column matrix multiplication}
+	\item{Column-Column matrix multiplication}
+	
+	\includegraphics[width=2.2in]{gpu_mmul.png}
+\end{itemize}
 
 \end{itemize}
 \end{frame}
 
-\begin{frame}{GPU Implementation Details (2)}
+\begin{frame}{Additional Features \& Possible Optimization}
 \begin{itemize}
 
-\item{Optimization}
-\begin{itemize}
-\item{Coalesced access to global memory by iterating over the secondary dimension}
-\item{Same strategy eliminates shared memory bank conflicts }
-\end{itemize}
-
-\includegraphics[width=3.0in]{gpu_mem_access.png}
-
-\item{Neural Network Customization}
+\item{Customizable Neural Network}
 \begin{itemize}
 \item{Single or double precision arithmetic}
 \item{User preferred activation function}
-\item{Abstract definition of network architecture and training parameters (i.e. batch size, learning rate) }
-
 \end{itemize}
+
+\item{Optimization}
+\begin{itemize}
+\item{Minimize shared memory bank conflicts to speed up computation}
+
+
+\item{Avoid recomputing the activation values for the delta matrix }
+\end{itemize}
+
+\includegraphics[width=3.0in]{gpu_mem_access.png}
 
 
 \end{itemize}

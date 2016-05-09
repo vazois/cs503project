@@ -90,10 +90,14 @@ void example03(ArgParser ap){
 	gnn::GNeuralNetwork<float,gnn_actf::Sigmoid> s(gs);
 
 	for(int i =0 ;i<1;i++){
-		s.bench_test_kernels(MMUL,2048,2048,2048,false);
+		//s.bench_test_kernels(MMUL,128,128,128,false);
+		//s.bench_test_kernels(MMUL,1024,1024,1024,false);
+		s.bench_test_kernels(BMMUL,1024,1024,1024,false);
+		//s.bench_test_kernels(MMUL,2048,2048,2048,false);
+		//s.bench_test_kernels(BMMUL,2048,2048,2048,false);
 		s.bench_test_kernels(TMMUL,2048,2048,2048,false);
-		s.bench_test_kernels(MHPROD,2048,2048,2048, false);
-		s.bench_test_kernels(TVECPVEC,2048,2048,2048,false);
+		//s.bench_test_kernels(MHPROD,2048,2048,2048, false);
+		//s.bench_test_kernels(TVECPVEC,2048,2048,2048,false);
 	}
 }
 

@@ -1,6 +1,7 @@
 #include "GNNConfig.h"
 #include "../common/Time.h"
 
+#define MBATCH 128
 #define TTILE 32
 #define LTILE 32
 
@@ -143,6 +144,56 @@ namespace gnn_kernels{
 
 		if( row < nlayer && col < bsize )
 			A_jj[row * bsize + col ] = F.F(Ajj);
+			//A_jj[row * bsize + col ] = Ajj;
+			//A_jj[row * bsize + col ] = row * bsize + col;
+	}
+
+	template<typename DATA_T, typename ACT_F, unsigned int TILE>
+	__global__ void	mmulB(
+			DATA_T *A_jj,
+			DATA_T *W_j,
+			DATA_T *A_j,
+			ACT_F F,
+			unsigned int nlayer,
+			unsigned int clayer,
+			unsigned int bsize,
+			unsigned int voffset,
+			unsigned int hoffset,
+			unsigned int mBatch
+			)
+	{
+		__shared__ DATA_T sWj[TILE * TILE];
+		__shared__ DATA_T sAj[TILE * TILE];
+		__shared__ DATA_T bias[TILE];
+
+		int row = ( blockIdx.y * blockDim.y + threadIdx.y ) + voffset * mBatch;
+		int col = ( blockIdx.x * blockDim.x + threadIdx.x ) + hoffset * mBatch;
+		if(threadIdx.x == 0) bias[threadIdx.y] = W_j[row * (clayer + 1) + clayer];
+		__syncthreads();
+		DATA_T Ajj = bias[threadIdx.y];
+
+		int loadOffset = threadIdx.y*TILE + threadIdx.x;
+		for(int i = 0;i < ((clayer-1) / TILE) + 1; i++){
+			if( row < nlayer && (i * TILE + threadIdx.x ) < clayer)
+				sWj[loadOffset] = W_j[ row * ( clayer + 1 ) + i * TILE  + threadIdx.x];// clayer + 1  to avoid bias vector
+			else sWj[loadOffset] = 0.0;
+
+			if ( i*TILE + threadIdx.y < clayer && col < bsize )
+				sAj[loadOffset] = A_j[(i * TILE + threadIdx.y) * bsize + col];
+			else sAj[loadOffset] = 0.0;
+			__syncthreads();
+
+			for(int j = 0;j < TILE; j++){
+				Ajj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
+			}
+
+			__syncthreads();
+		}
+
+		if( row < nlayer && col < bsize )
+			//A_jj[row * bsize + col ] = F.F(Ajj);
+			A_jj[row * bsize + col ] = Ajj;
+			//A_jj[row * bsize + col ] = row * bsize + col;
 	}
 
 	/*
@@ -200,7 +251,8 @@ namespace gnn_kernels{
 		}
 
 		int row = ( blockIdx.y * blockDim.y + threadIdx.y );
-		if( row < clayer && colD < bsize) D_j[row * bsize + colD] = Dj;
+		if( row < clayer && colD < bsize)
+			D_j[row * bsize + colD] = Dj;
 	}
 
 	/*
@@ -225,7 +277,7 @@ namespace gnn_kernels{
 		int col = ( blockIdx.x * blockDim.x + threadIdx.x );
 		if(threadIdx.x == 0) bias[threadIdx.y] = W_j[row * (clayer + 1) + clayer];
 		__syncthreads();
-		DATA_T Dj = bias[threadIdx.y];
+		/*DATA_T Dj = bias[threadIdx.y];
 
 		int loadOffset = threadIdx.y*TILE + threadIdx.x;
 		for(int i = 0;i < ((clayer - 1) / TILE) + 1; i++){
@@ -240,10 +292,14 @@ namespace gnn_kernels{
 
 			for(int j = 0;j < TILE; j++) Dj += sWj[threadIdx.y * TILE + j] * sAj[j * TILE + threadIdx.x];
 			__syncthreads();
-		}
+		}*/
 
 
-		if( row < nlayer && col < bsize ) D_j[row * bsize + col ] *= F.D(Dj);
+		DATA_T Dj = D_j[row * bsize + col];
+		if( row < nlayer && col < bsize )
+			D_j[row * bsize + col ] = Dj * (1-Dj);
+			//D_j[row * bsize + col ] *= F.D(Dj);
+			//D_j[row * bsize + col ] *= Dj;
 	}
 
 	/*
@@ -929,17 +985,85 @@ namespace gnn{
 				cudaDeviceSynchronize();
 				//printf("round(R-E)\n");
 			}
+		}else if (test == BMMUL){
+			DATA_T *devD;
+			//allocDevMem<DATA_T>(&devA,sizeof(DATA_T) * nlayer * clayer, "Error allocating devA memory");
+			//allocDevMem<DATA_T>(&devB,sizeof(DATA_T) * clayer * bsize, "Error allocating devB memory");
+			allocDevMem<DATA_T>(&devD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
+
+			dim3 agrid((bsize - 1)/TTILE + 1, (nlayer - 1)/TTILE + 1);
+			dim3 ablock(TTILE,TTILE);
+			Time<millis> t;
+			t.start();
+			gnn_kernels::mmul<DATA_T,ACT_F,TTILE><<<agrid,ablock>>>
+			(
+					devC,
+					devA,
+					devB,
+					F,
+					nlayer,
+					clayer - 1,
+					bsize
+			);
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmul");
+			t.lap("GPU serial mmul elapsed time");
+
+
+			unsigned int batch = 128;
+			unsigned int y = (nlayer - 1)/batch + 1;
+			unsigned int x = (bsize - 1)/batch + 1;
+
+			t.start();
+			for(int i =0;i<x;i++){
+				for (int j = 0; j<y;j++){
+					dim3 grid((batch - 1)/TTILE + 1, (batch - 1)/TTILE + 1);
+					dim3 block(TTILE,TTILE);
+					//print_grid(grid,block);
+					gnn_kernels::mmulB<DATA_T,ACT_F,TTILE><<<grid,block>>>
+					(
+						devD,
+						devA,
+						devB,
+						F,
+						nlayer,
+						clayer - 1,
+						bsize,
+						i,
+						j,
+						batch
+					);
+					//handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmulB");
+				}
+			}
+			//cudaDeviceSynchronize();
+			handleDeviceErrors(cudaDeviceSynchronize(),"Error executing batch mmulB");
+			t.lap("GPU serial Bmmul elapsed time");
+
+			DATA_T *hostD;
+			allocHostMem<DATA_T>(&hostD,sizeof(DATA_T) * nlayer * bsize, "Error allocating devC memory");
+			safeCpyToHost<DATA_T>(hostC,devC,sizeof(DATA_T)*nlayer*bsize,"Error copying devC to host");
+			safeCpyToHost<DATA_T>(hostD,devD,sizeof(DATA_T)*nlayer*bsize,"Error copying devD to host");
+
+			for(int i = 0 ;i<nlayer * bsize;i++){
+				if(hostC[i]!=hostD[i]) {
+					std::cout << hostC[i] << " != " << hostD[i] << std::endl;
+					exit(1);
+				}
+			}
+
+			cudaFree(devD); cudaFreeHost(hostD);
 		}
 
 		cudaFree(devA); cudaFree(devB); cudaFree(devC);
 		cudaFreeHost(hostA); cudaFreeHost(hostB); cudaFreeHost(hostC); cudaFreeHost(hostD);
+		cudaDeviceReset();
 	}
 
 	template class GNeuralNetwork<float,gnn_actf::Sigmoid>;
 	template class GNeuralNetwork<float,gnn_actf::FSigmoid>;
 	template class GNeuralNetwork<float,gnn_actf::Arctan>;
 
-	template class GNeuralNetwork<double,gnn_actf::Sigmoid>;
-	template class GNeuralNetwork<double,gnn_actf::FSigmoid>;
-	template class GNeuralNetwork<double,gnn_actf::Arctan>;
+	//template class GNeuralNetwork<double,gnn_actf::Sigmoid>;
+	//template class GNeuralNetwork<double,gnn_actf::FSigmoid>;
+	//template class GNeuralNetwork<double,gnn_actf::Arctan>;
 }
