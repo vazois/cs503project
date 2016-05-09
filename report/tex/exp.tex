@@ -4,7 +4,7 @@ In this section, we first describe the datasets used for our experiments and the
 
 \subsection{Dataset description}
 \label{sub:data_desc}
-We test the speedups achieved by the parallel implementation on two public datasets - MNIST and KDD Cup 1999. These datasets have been widely used by the machine learning community to compare different learning algorithms. Their description is as follows:
+We test the speedups achieved by the parallel implementation on two public datasets - MNIST. These datasets have been widely used by the machine learning community to compare different learning algorithms. Their description is as follows:
 
 \begin{itemize}
 \item \textbf{MNIST} - This is an image database of handwritten digits which is commonly used for training various image processing systems (Figure \ref{fig:mnist}). The task here is to classify the digit in the image. This dataset was derived from NIST's datasets and was formed by mixing the samples from NIST. This mixing was done because the training and testing datasets in the original NIST dataset were obtained from two different groups of people (Census Bureau employees and high school students). This dataset consists of 60,000 training images and 10,000 testing images, each of size 28$\times$ 28. In our experiments, we further divided the training set into training and validation in 5:1 ratio in order to determine suitable values for the hyperparameters.
@@ -16,7 +16,6 @@ We test the speedups achieved by the parallel implementation on two public datas
   \label{fig:mnist}
 \end{figure}
 
-\item \textbf{KDD Cup 1999} -  This is a dataset which first appeared in the KDD Cup held in 1999. The dataset has about 4 million data points each of which has 42 features. The features are of two types - categorical and integer. The task in the competition was to build a network intrusion detector which can be used to distinguish between good and bad network connections. 
 \end{itemize}
 
 \subsection{Network details}

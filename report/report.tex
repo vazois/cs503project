@@ -29,7 +29,7 @@
 
 % The \icmltitle you define below is probably too long as a header.
 % Therefore, a short form for the running title is supplied here:
-\icmltitlerunning{Parallel Backpropagation for Multilayer Neural Networks}
+\icmltitlerunning{Parallel Gradient Descent for Multilayer Feedforward Neural Networks}
 
 \usepackage[top=0.8in, bottom=1in, left=0.8in, right=0.8in]{geometry}
 %\usepackage[parfill]{parskip}
@@ -37,7 +37,7 @@
 \begin{document} 
 
 \twocolumn[
-\icmltitle{Parallel Backpropagation for Multilayer Neural Networks}
+\icmltitle{Parallel Gradient Descent for Multilayer Feedforward Neural Networks}
 
 % It is OKAY to include author information, even for blind
 % submissions: the style file will automatically remove it for you
@@ -63,12 +63,12 @@
 \begin{abstract}
 
 We present a parallel approach to classification using neural networks as the hypothesis class.
-Neural networks can have millions of parameters and learning the optimum value of all parameters from huge datasets can be very time consuming, if implemented on a single processor.
-In this work, we have implemented parallel backpropagation to train Multi Layer Perceptrons (MLPs) for classification tasks. Specifically, we implement a serial backpropagation algorithm and its parallel counterpart with Pthread library in C++.
-We also compare the two implementations with CUDA implementation of backpropagation on a GPU and study the parallelization speedup obtained for various network architectures and increasing problem sizes.
-We perform our tests on two benchmark datasets: MNIST and KDD Cup 1999, and finally compare all our implementations with the corresponding implementations in the state-of-the-art deep learning library: Theano.
+Neural networks can have millions of parameters and learning the optimum value of all parameters from huge datasets in a serial implementation can be a very time consuming task.
+In this work, we have implemented parallel gradient descent to train multilayer feedforward neural networks. Specifically, we analyze two kinds of parallelization techniques: (a) parallel processing of multiple training examples across several threads and (b) parallelizing matrix operations for a single training example.
+We have implemented a serial minibatch gradient descent algorithm, its parallel multithreaded version (using Pthread library in C++), a BLAS parallelized version and a CUDA implementation on a GPU. All implementations have been compared and analyzed for the speedup obtained across various network architectures and increasing problem sizes.
+We have performed our tests on the benchmark dataset: MNIST, and finally also compared our implementations with the corresponding implementations in the state-of-the-art deep learning library: Theano.
 
-\end{abstract} 
+\end{abstract}
 
 \input{tex/intro.tex}
 
@@ -76,11 +76,13 @@ We perform our tests on two benchmark datasets: MNIST and KDD Cup 1999, and fina
 
 \input{tex/gd.tex}
 
-\input{tex/gpubackprop.tex}
+\input{tex/pargd.tex}
 
 \input{tex/exp.tex}
 
 \input{tex/results.tex}
+
+\input{tex/concl.tex}
 
 \input{tex/future.tex}
 

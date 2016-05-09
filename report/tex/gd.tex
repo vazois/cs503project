@@ -8,7 +8,7 @@ In this work, we will work with the Mean-squared Error loss function as defined 
 \label{sub:BGD}
 
 To optimize the loss function, we will use the Gradient Descent algorithm which in its most basic form takes the derivative of the cost function w.r.t. all the parameter values and updates the parameters by a value proportional to this gradient and opposite in sign.
-In its most basic form the Gradient Descent algorithm is implemented as shown in algorithm \ref{alg:BGD}.
+A naive implementation of Gradient Descent is as shown in algorithm \ref{alg:BGD}.
 \begin{algorithm}[tb]
    \caption{Batch Gradient Descent}
    \label{alg:BGD}
@@ -57,45 +57,10 @@ The resulting algorithm is called Minibatch Gradient Descent (abbreviated as MGD
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Parallel Minibatch Gradient Descent}
-\label{sub:PMGD}
-
-Even with minibatches, the gradient computation can still be a bottleneck for most training algorithms.
-To mitigate this problem, observe that having the gradient as a sum of partial gradients with respect to individual training examples opens up the possibility of parallelizing the gradient computation efficiently.
-This can be done by distributing training examples of a minibatch across many processors, letting them compute a partial gradient over their own training examples and then summing up these partial gradients to get the approximate minibatch gradient.
-We use this to parallelize the gradient computation as shown in algorithm \ref{alg:PMGD}.
-\begin{algorithm}[tb]
-   \caption{Parallel Minibatch Gradient Descent}
-   \label{alg:PMGD}
-\begin{algorithmic}
-   \STATE {\bfseries Input:} Dataset $\mathcal{D} = \{x^{(i)},y^{(i)}\}_{i=1:N}$, Step Size $\alpha$, Max Epochs $N_{epoch}$, Batch Size $B$, Num Threads $T$
-   \STATE {\bfseries Output:} Parameters $\{\theta_k\}_{k=1:K}$
-   \STATE
-   \STATE Initialize $\theta$ randomly with small real numbers
-   \STATE $ep := 0$
-   \REPEAT
-   \STATE $ep := ep + 1$
-   \STATE Divide $\mathcal{D}$ into batches $\{B_j\}_{j=1:\frac{N}{B}}$ of size $B$ each
-   \FOR {$j \in \{1:\frac{N}{B}\}$}
-   \STATE Divide $B_j$ into thread-batches $\{B_{jt}\}_{t=1:\frac{B}{T}}$ of size $\frac{B}{T}$
-   \STATE \textbf{Thread `t' is forked:}
-   \FOR {$k \in \{1:K\}$}
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t := \sum_{i \in B_{jt}} ( y^{(i)} - f(x^{(i)}; \theta)) \frac{\partial f(x^{(i)}; \theta)}{\partial \theta_k}$
-   \ENDFOR
-   \STATE \textbf{Thread `t' joins back 'main'}
-   \FOR {$k \in \{1:K\}$}
-   \STATE $\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} := \frac{1}{B} \sum_t \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \big|_t$
-   \ENDFOR
-   \STATE $\theta_k := \theta_k - \alpha \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \hspace{16pt} \forall k \in \{1:K\}$
-   \ENDFOR
-   \UNTIL{$ep \geq N_{epoch}$}
-\end{algorithmic}
-\end{algorithm}
-
 \subsection{Backpropagation}
 \label{sub:BackProp}
 
-It can be seen that a major subroutine in algorithms \ref{alg:BGD}, \ref{alg:MGD} and \ref{alg:PMGD} is the computation of gradient of the loss function for a single training example.
+It can be seen that a major subroutine in algorithms \ref{alg:BGD} and \ref{alg:MGD} is the computation of gradient of the loss function for a single training example.
 
 Since the neural network is a very complicated function comprising of many layered operations, the gradient of loss function is not trivial to compute.
 For fully connected feedforward neural networks, first a forward pass is made to compute the value of neural network activations for all layers as shown in algorithm \ref{alg:FwdPass}. Then the gradient is computed by starting from the output layer and backpropagating gradient information for previous layers using the derivative chain-rule.
@@ -108,7 +73,7 @@ Let $x$ be a training example with label $y$. Our feedforward neural network has
 where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$ and the network parameters are $[W_{\{2:L\}}, b_{\{2:L\}}]$.
 The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp}. Note that $a \circ b$ is the elementwise product between vectors $a$ and $b$.
 \begin{algorithm}[tb]
-   \caption{Forward Pass}
+   \caption{Forward Propagation}
    \label{alg:FwdPass}
 \begin{algorithmic}
    \STATE {\bfseries Input:} Example $x$, parameters $[W_{\{2:L\}}, b_{\{2:L\}}]$

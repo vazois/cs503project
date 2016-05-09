@@ -46,8 +46,18 @@
 %\usetheme{Szeged}
 %\usetheme{Warsaw}
 \usepackage{colortbl}
+\graphicspath{ {img/} }
 
-\title{Parallel Backpropagation for Multilayer Neural Networks}
+% For algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% For mathematics
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\title{Parallel Gradient Descent for Multilayer Feedforward Neural Networks}
 
 % A subtitle is optional and this may be deleted
 \author[]{Palash Goyal\inst{1}
@@ -108,17 +118,16 @@
 % Section and subsections will appear in the presentation overview
 % and table of contents.
 
-
-
-  \input{intro.tex}
-   
-  \input{minibatch.tex}
-
-  \input{methods.tex}
-
-  \input{experiment.tex}
+  \input{tex/intro.tex}
   
-  \input{result.tex}
+  \input{tex/mgd.tex}
+  
+  \input{tex/fbprop.tex}
+  
+  \input{tex/pargd.tex}
 
+  \input{tex/exp.tex}
+  
+  \input{tex/results.tex}
 
 \end{document}

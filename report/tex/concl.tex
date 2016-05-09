@@ -1,0 +1,14 @@
+\section{Conclusion}
+\label{Concl}
+
+In this paper, we have explored techniques to parallelize training of multilayer feedforward neural networks by (a) splitting training examples among multiple threads of execution, and (b) by parallelizing matrix computations for a single training example.
+We have obtained significant performance gains by parallelizing the training process both by using multiple cores and also on a GPU. We have demonstrated a -x times speedup with multiple cores and -x times on a GPU by parallelizing across multiple training examples, and a -x times speedup by parallelizing matrix computations for a single training example.
+Our parallelized gradient descent implementation can find good usage for many real-time processing tasks. Typical examples include but are not limited to:
+\begin{itemize}
+\vspace{-6pt}
+\item Real-time online control of robotic manipulators which learn online from incoming sensory data.
+\vspace{-4pt}
+\item Self-driving cars which need to do online object recognition in real-time using deep neural networks.
+\vspace{-4pt}
+\item Speech translators which deploy deep recurrent neural networks for translation in real-time.
+\end{itemize}

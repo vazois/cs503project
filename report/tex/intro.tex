@@ -1,13 +1,19 @@
 \section{Introduction}
 \label{Intro}
 
-Artificial neural networks are powerful machine learning tools used in many applications including but not limited to search engines, spam and fraud detection, image classification, diagnostic medicine applications and stock market prediction.
+Artificial neural networks are powerful machine learning tools used in many applications including but not limited to search engines, fraud detection, image classification, diagnostic medicine applications and stock market prediction.
 
 Prior to application, neural networks undergo a training phase which is known to be very computationally intensive. This is primarily because the prevailing neural network architectures are implemented using several hidden layers, with each one consisting of thousands to millions of neurons in order to generalize well on diverse inputs. In this case, the resulting number of parameters that need to be trained are in the order of millions.
 
-Furthermore, achieving high accuracy requires considering a large number of training examples (usually in the order of millions). For this reason training a neural network is both a data and resource intensive operation. This calls for efforts to parallelize the training process on multi-core and while emphasizing at utilizing the maximum available bandwidth.
+Furthermore, achieving high accuracy requires considering a large number of training examples (usually in the order of millions). For this reason training a neural network is both a data and resource intensive operation. This calls for efforts to parallelize the training process on multi-core machines and/or across multiple machines.
 
-Currently Minibatch Gradient Descent (henceforth called MGD) is the most commonly used optimization algorithm used to train neural networks in supervised settings. It is implemented in a layerwise-recursive fashion which is termed \textit{backpropagation} in the context of neural networks.
+Currently Minibatch Gradient Descent (henceforth called MGD) is the most commonly used optimization algorithm used to train neural networks in supervised settings. It is implemented in a layerwise-recursive fashion which involves computing the neural network output (forward propagation) and updating parameters by computing gradient values (backpropagation).
 
-In this paper, we have implemented parallel backpropagation to train Multi Layer Perceptrons (MLPs) for classification tasks.
-The rest of the paper is organized as follows: section \ref{ProbDesc} presents a description of supervised learning tasks and neural networks as classifiers. Section \ref{GD} describes the conventional serial backpropagation algorithm, and an approach to parallelization using multiple threads. Section \ref{GPUBackProp} describes how to implement backpropagation on a GPU with cuda. Section \ref{Exp} describes our datasets and the experiments we performed on them. Section \ref{Results} presents our results obtained for these implementations and analyzes the speedup obtained for various network architectures and increasing problem sizes. It also presents a comparison with the same algorithms implemented using a state-of-the-art neural network library Theano. Finally, we conclude in section \ref{Future} with a discussion of potential applications and future work for this project.
+In this paper, we have implemented parallel minibatch gradient descent to train multilayer feedforward neural networks for classification tasks.
+The rest of the paper is organized as follows: section \ref{ProbDesc} presents a description of supervised learning tasks and neural networks as classifiers.
+Section \ref{GD} describes the conventional gradient descent algorithm and its minibatch variant. It also describes the forward propagation and the backpropagation algorithms for neural networks.
+Section \ref{ParGD} discusses approaches to parallelization: (a) by distributing multiple examples across several threads, and (b) by performing matrix computations in parallel.
+It also discusses the implementation of parallel gradient descent on a GPU with CUDA.
+Section \ref{Exp} describes our dataset and the experiments we have performed.
+Section \ref{Results} presents our results obtained for these experiments and analyzes the speedup obtained for various network architectures and increasing problem sizes. It also presents a comparison with the same algorithms implemented using a state-of-the-art deep learning library Theano.
+Section \ref{Concl} concludes the paper by discussing some potential applications and section \ref{Future} explores some potentially interesting future directions.

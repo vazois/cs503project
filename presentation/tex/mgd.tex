@@ -1,0 +1,26 @@
+\section{Gradient Descent}
+
+\begin{frame}<beamer>{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+\end{frame}
+
+\begin{frame}{Gradient Descent}
+
+	Minimize the Mean-Squared Error loss:
+	\begin{align*}
+	\mathcal{L}_{MSE} (\theta) = \frac{1}{N}\sum_{i=1}^N ( y^{(i)} - f(x^{(i)}; \theta))^2
+	\end{align*}
+	
+	\textbf{Algorithm: Gradient Descent}
+	\begin{enumerate}
+	\item Initialize all weights $(\theta)$ randomly with small values close to 0.
+	\item Repeat until convergence \{
+	\begin{equation*}
+	\theta_k := \theta_k - \alpha \frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} \hspace{16pt} \forall k \in \{1,2,...,K\}
+	\end{equation*}
+	\}
+	\end{enumerate}
+	
+	Minibatch gradient descent considers a subset of examples
+
+\end{frame}

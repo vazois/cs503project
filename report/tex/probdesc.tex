@@ -1,12 +1,12 @@
 \section{Problem Description}
 \label{ProbDesc}
 
-We first formally describe a classification task in the supervised learning setting. Then we describe a feedforward neural network with fully connected layers. Feedforward neural networks act as function approximators in such tasks.
+We first formally describe a classification task in the supervised learning setting. Then we describe a feedforward neural network with fully connected layers. Feedforward neural networks act as function approximators in classification tasks.
 
 \subsection{Classification Problem}
 \label{sub:ClassProb}
 
-More formally, given a dataset $\mathcal{D} = \{x^{(i)},y^{(i)}\}_{i=1:N}$ with data points $x^{(i)} \in \mathbb{R}^D$ and labels $y^{(i)} \in \mathbb{R}^P$, the classification task involves making an accurate label prediction $\hat{y}$ on a previously unseen data point $x$. We approximate the label as a function of the datapoint using a classifier (a feedforward neural network here) with parameters $\theta = \{\theta_k\}_{k=1:K}$ as follows: $y \approx \hat{y} = f(x; \theta)$.
+Given a dataset $\mathcal{D} = \{x^{(i)},y^{(i)}\}_{i=1:N}$ with data points $x^{(i)} \in \mathbb{R}^D$ and labels $y^{(i)} \in \mathbb{R}^P$, the classification task involves making an accurate label prediction $\hat{y}$ on a previously unseen data point $x$. We approximate the label as a function of the datapoint using a classifier (a feedforward neural network here) with parameters $\theta = \{\theta_k\}_{k=1:K}$ as follows: $y \approx \hat{y} = f(x; \theta)$.
 The classifier (neural network) learns the function $f$ from the training data $\mathcal{D}$ by tuning its parameters ($\theta$) to minimize a pre-specified loss function, for instance, the Mean-Squared Error loss:
 \begin{align} \label{LMSE}
 \mathcal{L}_{MSE} (\theta) = \frac{1}{N}\sum_{i=1}^N ( y^{(i)} - f(x^{(i)}; \theta))^2
@@ -28,10 +28,13 @@ We will describe gradient descent in section \ref{GD}.
 \caption{A neuron}
 \label{fig:neuron}
 \end{center}
-\vskip -0.2in
+\vskip -0.4in
 \end{figure}
 
-The basic unit of feedforward neural networks is a neuron (figure \ref{fig:neuron}). A single neuron generally takes a vector of inputs $x \in \mathbb{R}^n$ and outputs a single scalar $a \in \mathbb{R}$ (called its activation). Generally the function computed by a neuron comprises of linear transformation on the input vector followed by a pointwise non-linear activation function:
+Neural networks are mathematical models partly inspired by the workings of the human brain.
+The basic unit of feedforward neural networks is a neuron (figure \ref{fig:neuron}).
+A single neuron generally takes a vector of inputs $x \in \mathbb{R}^n$ and outputs a single scalar $a \in \mathbb{R}$ (called its activation).
+Generally the function computed by a neuron comprises of linear transformation on the input vector followed by a pointwise non-linear activation function:
 \begin{align}
 a = f(w^T x + b)
 \end{align}
@@ -57,7 +60,6 @@ A feedforward neural network is a directed acyclic graph $G = (V,E)$ each of who
 A feedforward network with $L$ layers comprises of a single input layer, $L-2$ hidden layers (their outputs are not directly observed) and a final output layer.
 Let the input of the neural network be $x \in \mathbb{R}^{n_{in}}$ and the output be $y \in \mathbb{R}^{n_{out}}$.
 The $l^{th}$ layer has $n_l$ neurons and the full network has $n = \sum_{l=1}^L n_l$ neurons. 
-An example network is shown in figure \ref{fig:nnet}.
 
 \begin{figure}[ht]
 %\vskip 0.2in
@@ -69,7 +71,7 @@ An example network is shown in figure \ref{fig:nnet}.
 \vskip -0.2in
 \end{figure}
 
-The input to the first layer (denoted $x_1$) is $x$ and the output (activation) of the first layer is denoted $a_1 \in \mathbb{R}^{n_{in}}$. The input layer contains $n_1 = n_{in}$ dummy neurons each of which takes a single scalar input $n_{in}$ and passes it as it is i.e. $a_1 = x_1 = x$.
+The input to the first layer (denoted $x_1$) is $x$ and the output (activation) of the first layer is denoted $a_1 \in \mathbb{R}^{n_{in}}$. The input layer contains $n_1 = n_{in}$ dummy neurons each of which takes a single scalar input $n_{in}$ and passes it unchanged i.e. $a_1 = x_1 = x$ (linear activation function).
 
 All subsequent layers $l \in \{2,3,...,L\}$ give an output $a_l \in \mathbb{R}^{n_{l}}$ and take an input $x_l = a_{l-1} \in \mathbb{R}^{n_{l-1}}$. The final network output $y$ is given by $a_L \in \mathbb{R}^{n_L} (n_L = n_{out})$.
 Each of these layers applies a linear transformation to its input followed by a pointwise non-linear activation function i.e. for each layer:
@@ -78,3 +80,5 @@ z_l &= (W_l)^T x_l + b_l \\
 a_l &= f(z_l)
 \end{align}
 where $W^l \in \mathbb{R}^{n_{l-1} \times n_l}$ is the weight matrix of the layer and $b_l \in \mathbb{R}^{n_l}$ is the bias vector. The function $f(\cdot)$ is the pointwise activation function which applies to each component of the $z_l$ vector and we will use sigmoid as our activation function for the classification task.
+
+An example network with one hidden layer is shown in figure \ref{fig:nnet}.

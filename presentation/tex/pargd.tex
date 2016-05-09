@@ -1,0 +1,20 @@
+\section{Parallel Gradient Descent}
+
+\begin{frame}<beamer>{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+\end{frame}
+
+\begin{frame}{Parallelizing Gradient Descent}
+
+Two ways to parallelize:
+\begin{itemize}
+	\item \textbf{Parallelize Gradient Descent}: \\
+	Derivative of the loss function has the following form:
+	\begin{equation*}
+	\frac{\partial \mathcal{L}_{MSE}}{\partial \theta_k} = \frac{1}{N} \sum_{i=1}^N ( y_i - f(x_i; \theta)) \frac{\partial f(x_i; \theta)}{\partial \theta_k}
+	\end{equation*}
+Distribute training examples, compute partial gradients, sum up partial gradients
+    \item \textbf{Parallelize Backpropagation}: \\
+    Parallelize matrix vector multiplications in forward propagation and backpropagation algorithms
+        \end{itemize}
+\end{frame}

@@ -1,0 +1,103 @@
+\section{Parallelization Methods}
+    \subsection{POSIX Threads}
+        \begin{frame}{PThreads - POSIX Threads}
+            \begin{itemize}
+                \item {
+                    \textbf{POSIX} : Portable Operating System Interface for UNIX
+                    }
+                \item { Pthreads: The POSIX threading interface}
+                \begin{itemize}
+                \item {Thread implementations adhering to the POSIX standard}
+                \item {System calls to create and synchronize threads}
+                \item {Should be relatively uniform across UNIX-like OS platforms }
+                \end{itemize}
+             \item {Pthreads supports for }
+             \begin{itemize}
+             \item {Creating parallelism}
+             \item {Synchronization}
+             \end{itemize}
+             \item {No explicit support for communication, because shared 
+memory is implicit.}
+            \end{itemize}
+        \end{frame}
+        
+
+\subsection{CUDA}
+\begin{frame}{Design Overview}
+
+\begin{itemize}
+
+\item{ Neural Network Training Process}
+\begin{itemize}
+\item{\textbf{Forward propagation:}  \\$A_{i+1} = f(W_{i} \cdot A_{i})$}
+\item{\textbf{Back propagation:}  \\$D_L =Y - A_L$,\\ $D_i = (W_{i})^{T}\cdot D_{i+1} \circ d(W_{i-1} \cdot A_{i-1})$}
+\item{\textbf{Weight update:} \\$W_{i} = W_{i} + \frac{n}{b} \cdot \sum_{j=1}^{b} D_{i+1}^{j} \cdot A_{i}^j$}
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=2.4in]{gpu_neural_net_data.png}
+\end{center}
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{GPU Implementation Overview}
+\begin{itemize}
+\item{Training Kernels}
+\begin{itemize}
+\item{ Based on variants of tiled matrix multiplication }
+\item{ Each thread responsible for computing a single matrix cell }
+\item{ Elements are loaded into shared memory to enable data re-use }
+\end{itemize}
+
+\includegraphics[width=2.0in]{matrix-multiplication-with-shared-memory.png}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Data Organization \& Access}
+\begin{itemize}
+
+\item{Data Layout}
+\begin{itemize}
+	\item{Weight matrix is stored in row-major order}
+	\item{Everything else in column-major order}
+	\includegraphics[width=2.4in]{gpu_data_layout.png}
+\end{itemize}
+
+\item{Global Memory Access}
+\begin{itemize}
+	\item{Iterate over the secondary dimension}
+	\item{Row-Column matrix multiplication}
+	\item{Column-Column matrix multiplication}
+	
+	\includegraphics[width=2.2in]{gpu_mmul.png}
+\end{itemize}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Additional Features \& Possible Optimization}
+\begin{itemize}
+
+\item{Customizable Neural Network}
+\begin{itemize}
+\item{Single or double precision arithmetic}
+\item{User preferred activation function}
+\end{itemize}
+
+\item{Optimization}
+\begin{itemize}
+\item{Minimize shared memory bank conflicts to speed up computation}
+
+
+\item{Avoid recomputing the activation values for the delta matrix }
+\end{itemize}
+
+\includegraphics[width=3.0in]{gpu_mem_access.png}
+
+
+\end{itemize}
+\end{frame}
+    
