@@ -71,7 +71,7 @@ Let $x$ be a training example with label $y$. Our feedforward neural network has
 \mathcal{L}_{MSE} ([W_{\{2:L\}}, b_{\{2:L\}}]) = \frac{1}{N} \sum_{i=1}^N ( y - a_L(x))^2
 \end{align}
 where $a_L(x)$ is the activation of the output layer when the input to the neural network is $x$ and the network parameters are $[W_{\{2:L\}}, b_{\{2:L\}}]$.
-The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp}. Note that $a \circ b$ is the elementwise product between vectors $a$ and $b$.
+The backpropagation algorithm first computes errors $\delta_l \in \mathbb{R}^{n_l}$ and then computes the derivative of loss function with respect to parameters as shown in algorithm \ref{alg:BackProp} \cite{Conway2000}. Note that $a \circ b$ is the elementwise product between vectors $a$ and $b$.
 \begin{algorithm}[tb]
    \caption{Forward Propagation}
    \label{alg:FwdPass}
